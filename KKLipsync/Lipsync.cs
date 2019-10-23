@@ -54,6 +54,38 @@ namespace KKLipsync
         }
     }
 
+    // copied from ADV.Commands.FBSCtrlMouth
+    /// <summary>
+    /// This is the main class for face morphing.
+    /// </summary>
+    class LipsyncFaceMorpher : FBSBase
+    {
+        public bool useAjustWidthScale;
+        public GameObject objAdjustWidthScale;
+        [Range(0.01F, 1)]
+        public float randTimeMin;
+        [Range(0.01F, 1)]
+        public float randTimeMax;
+        [Range(0.1F, 2)]
+        public float randScaleMin;
+        [Range(0.1F, 2)]
+        public float randScaleMax;
+        [Range(0, 1)]
+        public float openRefValue;
+
+        public LipData LipData { get; set; }
+
+        public LipsyncFaceMorpher() { }
+
+        public bool AdjustWidthScale() { return false; }
+        public void CalcBlend(float openValue) { }
+        public float GetAdjustWidthScale() { return 0; }
+        public new void Init() {
+            base.Init();
+        }
+        public void UseAdjustWidthScale(bool useFlags) { }
+    }
+
     class LipDataCreator
     {
         float[] spectrumBuffer = new float[512];
