@@ -19,22 +19,27 @@ namespace KKLipsync
             BepInEx.Logger.Log(BepInEx.Logging.LogLevel.Info, $"Loaded {PluginName} {PluginVersion}");
             var harmony = HarmonyInstance.Create(Guid);
 
-            harmony.PatchAll(typeof(LipsyncHooks));
+            harmony.PatchAll(typeof(KKLipsync.Hooks.AwakeHook));
 
             KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
         }
 
-   
-   
+
+
     }
 
-    [HarmonyPatch(typeof(ChaControl))]
-    [HarmonyPatch("Awake")]
-    public class LipsyncHooks
+    namespace Hooks
     {
-        //static void Postfix(ChaControl __instance)
-        //{
-        //    __instance.gameObject.AddComponent<LipsyncController>();
-        //}
+        [HarmonyPatch(typeof(ChaControl))]
+        [HarmonyPatch("Awake")]
+
+        public class AwakeHook
+        {
+            //static void Postfix(ChaControl __instance)
+            //{
+            //    __instance.gameObject.AddComponent<LipsyncController>();
+            //}
+        }
+
     }
 }
