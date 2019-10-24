@@ -23,7 +23,7 @@ namespace KKLipsync
 
             harmony.PatchAll(typeof(Hooks.Hook));
 
-            KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
+            //KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
         }
 
 
@@ -38,11 +38,17 @@ namespace KKLipsync
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(ChaControl __instance)
             {
-                Traverse.Create<ChaControl>().Field(")
+                
                 BepInEx.Logger.Log(BepInEx.Logging.LogLevel.Message, $"It works!");
                 // Console.WriteLine($"{__instance.FixedRate}, {sb.ToString()}");
                 // Don't run the original method
                 return true;
+            }
+
+            [HarmonyPatch(typeof(ChaControl), "Awake")]
+            public static void ReplaceAudioAssist(ChaControl __instance)
+            {
+
             }
         }
 

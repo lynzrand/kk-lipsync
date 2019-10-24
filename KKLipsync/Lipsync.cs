@@ -22,83 +22,81 @@ namespace KKLipsync
         float originOpenPercent;
     }
 
-    class LipsyncController : KKAPI.Chara.CharaCustomFunctionController
+    // we don't need this class for now
+    //class LipsyncController : KKAPI.Chara.CharaCustomFunctionController
+    //{
+
+    //    Coroutine c = null;
+
+    //    void AnalyzeMouth()
+    //    {
+    //        Dictionary<int, float> val = (Dictionary<int, float>)(typeof(FBSCtrlMouth).GetField("dictNowFace").GetValue(ChaControl.mouthCtrl));
+
+    //        foreach (var kvp in val)
+    //        {
+    //            print(kvp);
+    //        }
+    //    }
+
+
+    //    protected override void Update()
+    //    {
+    //        base.Update();
+    //        if (Input.GetKeyDown(KeyCode.J)) AnalyzeMouth();
+    //    }
+
+    //    protected override void OnCardBeingSaved(GameMode currentGameMode)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
+    //    protected override void Awake()
+    //    {
+    //        base.Awake();
+    //    }
+    //}
+
+    /// <summary>
+    /// This class replaces <c>FaceBlendShape.MouthCtrl</c>.
+    /// </summary>
+    class LipsyncFaceMorpher : FBSCtrlMouth
     {
+        public LipData LipData { get; set; }
+        public LipDataCreator creator { get; set; }
 
-        Coroutine c = null;
-
-        void AnalyzeMouth()
+        public void CalculateBlendShapeNew()
         {
-            Dictionary<int, float> val = (Dictionary<int, float>)(typeof(FBSCtrlMouth).GetField("dictNowFace").GetValue(ChaControl.mouthCtrl));
+            // TODO: Calculate blend shape according to lip data
 
-            foreach(var kvp in val)
+            foreach (var fbsTarget in this.FBSTarget)
             {
-                print(kvp);
+                // TODO: do the blending
             }
         }
 
-
-        protected override void Update()
-        {
-            base.Update();
-            if (Input.GetKeyDown(KeyCode.J)) AnalyzeMouth();
-        }
-
-        protected override void OnCardBeingSaved(GameMode currentGameMode)
-        {
-            throw new NotImplementedException();
-        }
-        protected override void Awake()
-        {
-            base.Awake();
-        }
     }
 
-    // copied from ADV.Commands.FBSCtrlMouth
     /// <summary>
-    /// This is the main class for face morphing.
+    /// This class replaces <c>ChaControl.fbsCtrl</c>
     /// </summary>
-    class LipsyncFaceMorpher : FBSBase
+    class LipsyncBlendedFace : FaceBlendShape
     {
-        public bool useAjustWidthScale;
-        public GameObject objAdjustWidthScale;
-        [Range(0.01F, 1)]
-        public float randTimeMin;
-        [Range(0.01F, 1)]
-        public float randTimeMax;
-        [Range(0.1F, 2)]
-        public float randScaleMin;
-        [Range(0.1F, 2)]
-        public float randScaleMax;
-        [Range(0, 1)]
-        public float openRefValue;
 
-        public LipData LipData { get; set; }
-
-        public LipsyncFaceMorpher() { }
-
-        public bool AdjustWidthScale() { return false; }
-        public void CalcBlend(float openValue) { }
-        public float GetAdjustWidthScale() { return 0; }
-        public new void Init() {
-            base.Init();
-        }
-        public void UseAdjustWidthScale(bool useFlags) { }
     }
 
-    class LipDataCreator
+    /// <summary>
+    /// This class replaces <c>ChaControl.fbsaaVoice</c>.
+    /// </summary>
+    class LipDataCreator: FBSAssist.AudioAssist
     {
         float[] spectrumBuffer = new float[512];
-        AudioSource src;
-        ChaControl ctrl;
+        
 
-        public LipDataCreator(ChaControl ctrl, AudioSource src)
+        public LipDataCreator()
         {
-            this.ctrl = ctrl;
-            this.src = src;
+          
         }
 
-        public LipData GetLipData()
+        public LipData GetLipData(AudioSource src)
         {
             src.GetSpectrumData(spectrumBuffer, 0, FFTWindow.BlackmanHarris);
             // TODO: implement fft
