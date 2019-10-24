@@ -87,6 +87,15 @@ FaceBlendShape.LateUpdate()
                 // modified data.
 ```
 
+To finalize, the way to patch this thing is:
+
+- Create a custom class (`LipsyncFaceBlender`) to replace `FaceBlendShape`.
+- Create a custom class (`LipsyncMouthController`) to replace `FBSCtrlMouth`.
+- Create a replacement function of `FBSCtrlMouth.CalcBlend()`.
+- Create a replacement function of `ChaControl.UpdateBlendShapeVoice()`.
+- Bypass `ChaControl.UpdateBlendShapeVoice()`. Call the custom function in `LipsyncFaceBlender` instead.
+- Bypass `FBSCtrlMouth.CalcBlend()`.
+
 ---
 
 Codename _`Seventeen`_
