@@ -32,23 +32,26 @@ namespace KKLipsync
 
     namespace Hooks
     {
-        public class Hook
+        public static class Hook
         {
             [HarmonyPatch(typeof(ChaControl), "UpdateBlendShapeVoice")]
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(ChaControl __instance)
             {
-                
+
                 BepInEx.Logger.Log(BepInEx.Logging.LogLevel.Message, $"It works!");
                 // Console.WriteLine($"{__instance.FixedRate}, {sb.ToString()}");
                 // Don't run the original method
                 return true;
             }
 
-            [HarmonyPatch(typeof(ChaControl), "Awake")]
-            public static void ReplaceAudioAssist(ChaControl __instance)
+            [HarmonyPatch(typeof(FaceBlendShape), "Awake")]
+            [HarmonyPostfix]
+            public static void ReplaceAudioAssist(
+                FaceBlendShape __instance
+            )
             {
-
+                //__instance.MouthCtrl = ;
             }
         }
 

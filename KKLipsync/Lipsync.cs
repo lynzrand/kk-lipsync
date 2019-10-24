@@ -14,12 +14,13 @@ namespace KKLipsync
     /// Instead of a single value (mouth open-ness) in the original game, a struct of 
     /// </para>
     /// </summary>
+    [Serializable]
     struct LipData
     {
-        int before, after;
-        float animationProgress;
-        float openPercent;
-        float originOpenPercent;
+        public int before, after;
+        public float animationProgress;
+        public float openPercent;
+        public float originOpenPercent;
     }
 
     // we don't need this class for now
@@ -58,8 +59,38 @@ namespace KKLipsync
     /// <summary>
     /// This class replaces <c>FaceBlendShape.MouthCtrl</c>.
     /// </summary>
-    class LipsyncFaceMorpher : FBSCtrlMouth
+    [Serializable]
+    class LipsyncMouthController : FBSCtrlMouth
     {
+        /// <summary>
+        /// This method transfers data and replaces the original mouth controller with
+        /// this one.
+        /// </summary>
+        /// <param name="_base"></param>
+        public LipsyncMouthController(FBSCtrlMouth _base)
+        {
+            var trav = Harmony.Traverse.Create(_base);
+            var trav_this = Harmony.Traverse.Create(this);
+            trav.Fields().ForEach((field) =>
+            {
+                trav_this.Field(field).SetValue(trav.Field(field).GetValue(_base));
+            });
+
+            // properties should already be synced with their backing fields?
+            //trav.Properties().ForEach((field) =>
+            //{
+            //    trav_this.Field(field).SetValue(trav.Field(field).GetValue());
+            //});
+
+            this.Init();
+        }
+        public new void Init()
+        {
+            base.Init();
+            creator = new LipDataCreator();
+        }
+
+
         public LipData LipData { get; set; }
         public LipDataCreator creator { get; set; }
 
@@ -78,7 +109,7 @@ namespace KKLipsync
     /// <summary>
     /// This class replaces <c>ChaControl.fbsCtrl</c>
     /// </summary>
-    class LipsyncBlendedFace : FaceBlendShape
+    class LipsyncFaceBlender : FaceBlendShape
     {
 
     }
@@ -86,14 +117,14 @@ namespace KKLipsync
     /// <summary>
     /// This class replaces <c>ChaControl.fbsaaVoice</c>.
     /// </summary>
-    class LipDataCreator: FBSAssist.AudioAssist
+    class LipDataCreator : FBSAssist.AudioAssist
     {
         float[] spectrumBuffer = new float[512];
-        
+
 
         public LipDataCreator()
         {
-          
+
         }
 
         public LipData GetLipData(AudioSource src)
