@@ -134,23 +134,42 @@ namespace KKLipsync
     /// </summary>
     class LipDataCreator : FBSAssist.AudioAssist
     {
-        public const int bufferSize = 1024;
-        public float[] spectrumBuffer = new float[bufferSize];
+        public const int bufferSize = 512;
+        public float[] audioBuffer = new float[bufferSize];
+        public double[] doubleBuffer = new double[bufferSize];
 
+        private uint contextId = 299;
         //public int verticalScale = 500;
+        MathNet.Filtering.OnlineFilter filter;
 
         public LipDataCreator()
         {
+            filter = MathNet.Filtering.OnlineFilter.CreateLowpass(MathNet.Filtering.ImpulseResponse.Infinite, 1, 0.02);
 
+            OVRLipSync.Initialize(sampleRate, bufferSize);
+
+            var ctx_result = OVRLipSync.CreateContext(ref contextId, OVRLipSync.ContextProviders.Enhanced_with_Laughter, sampleRate, true);
+
+            if (ctx_result != 0) Debug.LogError($"[LipSync] Failed to create context: {contextId}");
         }
 
         public int sampleRate { get => UnityEngine.AudioSettings.outputSampleRate; }
         public float hzPerBin { get => (float)sampleRate / 2 / bufferSize; }
 
+        public bool isPlaying = false;
+
         public LipData GetLipData(AudioSource src)
         {
             if (src == null) return new LipData();
-            src.GetSpectrumData(spectrumBuffer, 0, FFTWindow.BlackmanHarris);
+            src.GetOutputData(audioBuffer, 0);
+            isPlaying = true;
+            //doubleBuffer = Array.ConvertAll(spectrumBuffer, x => (double)x);
+
+            var framedata = new OVRLipSync.Frame();
+
+            OVRLipSync.ProcessFrame(contextId, audioBuffer, framedata, false);
+
+
             //MathNet.Numerics.IntegralTransforms.Fourier.ForwardReal(spectrumBuffer, bufferSize - 2);
             //for (int i = 0; i < bufferSize / 3; i++)
             //{
@@ -194,7 +213,7 @@ namespace KKLipsync
         {
             if (!Input.GetKeyDown(KeyCode.Comma)) return;
 
-            LipsyncConfig.Instance.logger.LogInfo($"Cepstrum := {ListToString(spectrumBuffer)}");
+            LipsyncConfig.Instance.logger.LogInfo($"Cepstrum := {ListToString(audioBuffer)}");
             LipsyncConfig.Instance.logger.LogInfo($"Original := {ListToString(src.GetOutputData(1024, 0))}");
 
         }
@@ -232,23 +251,23 @@ namespace KKLipsync
 
     class LipsyncDebugGui : MonoBehaviour
     {
-        public LipDataCreator reference;
+        public LipDataCreator? audioAssist;
         public LipsyncDebugGui()
         {
-            for (int i = 0; i < graphWidth * graphHeight; i++) resetArray[i] = new Color(0, 0, 0, 1);
+            for (int i = 0; i < graphWidth * graphHeight; i++) graphBuffer[i] = new Color(0, 0, 0, 1);
         }
 
         const int graphWidth = 512;
         const int graphHeight = 512;
         private Texture2D graph = new Texture2D(graphWidth, graphHeight, TextureFormat.RGBA32, false);
 
-        readonly Color[] resetArray = new Color[graphWidth * graphHeight];
+        readonly Color[] graphBuffer = new Color[graphWidth * graphHeight];
 
-        float yScale = 70f;
+        float yScale = 140f / 512;
         float yOffset = 4f;
         const float xScale = (float)graphWidth / LipDataCreator.bufferSize;
 
-        List<PeakInfo> peaks;
+        List<PeakInfo> peaks = new List<PeakInfo>();
 
         public static void DrawLine(Texture2D tex, Vector2 p1, Vector2 p2, Color col)
         {
@@ -264,33 +283,36 @@ namespace KKLipsync
             }
         }
 
-        private void DrawTexture()
+        private Color intensityToColor(float intensity)
         {
-            graph.SetPixels(resetArray);
-            float val = 0, lastX = 0, lastY = 0;
+            var val = Mathf.Clamp((Mathf.Log10(intensity) + yOffset) * yScale, 0, 1);
+            return new Color(val, val, val);
+        }
+
+        private void DrawSpectrogram()
+        {
+            if (audioAssist is null) return;
+            //graph.SetPixels(reset);
+            for (int i = 0; i < graphHeight - 1; i++)
+            {
+                for (int j = 0; j < graphWidth; j++)
+                {
+                    graphBuffer[i * graphWidth + j] = graphBuffer[(i + 1) * graphWidth + j];
+                }
+            }
             for (int i = 1; i < LipDataCreator.bufferSize; i++)
             {
-                val = reference.spectrumBuffer[i];
-                float xval = binToXDisplayCoord(i);
-                float yval = intensityToYDIsplayCoord(val);
-
-                DrawLine(graph, new Vector2(xval, yval), new Vector2(lastX, lastY), new Color(1, 1, 1, 1));
-                //graph.SetPixel((int)xval, (int)yval, new Color(1, 1, 1, 1));
-
-
-                lastX = xval;
-                lastY = yval;
+                var val = audioAssist.audioBuffer[i];
+                graphBuffer[graphWidth * (graphHeight - 1) + Mathf.FloorToInt(i * xScale)] = intensityToColor(val);
             }
-            peaks = LipDataCreator.findPeaks(reference.spectrumBuffer, 7);
+            peaks = LipDataCreator.findPeaks(audioAssist.audioBuffer, 7);
             //LipsyncConfig.Instance.logger.LogInfo(peaks[0]);
             for (int i = 0; i < peaks.Count; i++)
             {
                 var item = peaks[i];
-                var x = binToXDisplayCoord(item.id);
-                var y = intensityToYDIsplayCoord(item.intensity);
-                for (int j = 0; j < 10; j++)
-                    graph.SetPixel((int)x, j, new Color(1f / i, 1f / i, 0));
+                graphBuffer[graphWidth * (graphHeight - 1) + Mathf.FloorToInt(item.id * xScale)] = new Color(.3f / i + .7f, .7f / i + .3f, 0);
             }
+            graph.SetPixels(graphBuffer);
             graph.Apply();
         }
 
@@ -304,11 +326,14 @@ namespace KKLipsync
             return Mathf.Clamp(Mathf.Log(i, 2) * 102.4f * xScale, 0, graphWidth);
         }
 
+        Rect windowRect = new Rect(0, 0, 600, 800);
+
         public void OnGUI()
         {
-            DrawTexture();
+            if (audioAssist != null && audioAssist.isPlaying)
+                DrawSpectrogram();
             int windowId = 1000000;
-            GUILayout.Window(windowId, new Rect(0, 0, 600, 800), (id) =>
+            windowRect = GUILayout.Window(windowId, windowRect, (id) =>
             {
                 //GUILayout.BeginArea(new Rect(0, 0, 600, 800));
                 //GUILayout.Label("Spectrum");
@@ -317,27 +342,30 @@ namespace KKLipsync
                 {
                     // y scale slider
                     GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
-                    GUILayout.Label("Y scale");
-                    yScale = GUILayout.HorizontalSlider(yScale, 1, 100, GUILayout.ExpandWidth(true));
+                    GUILayout.Label($"Y scale: {yScale}");
+                    yScale = GUILayout.HorizontalSlider(yScale, 0, 3, GUILayout.ExpandWidth(true));
                     GUILayout.EndHorizontal();
                 }
                 {
                     // y offset slider
                     GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
-                    GUILayout.Label("Y offset");
-                    yOffset = GUILayout.HorizontalSlider(yOffset, -3, 10, GUILayout.ExpandWidth(true));
+                    GUILayout.Label($"Y offset: {yOffset}");
+                    yOffset = GUILayout.HorizontalSlider(yOffset, -1, 5, GUILayout.ExpandWidth(true));
                     GUILayout.EndHorizontal();
                 }
                 {
                     GUILayout.Label("Peaks:");
                     foreach (var i in peaks)
                     {
-                        GUILayout.Label($"{i.id * reference.hzPerBin}Hz: {i.intensity}");
+                        GUILayout.Label($"{i.id * audioAssist?.hzPerBin}Hz: {i.intensity}");
                     }
                 }
                 GUILayout.EndVertical();
                 //GUILayout.EndArea();
             }, "Spectrum");
-        }   
+
+            if (audioAssist != null)
+                audioAssist.isPlaying = false;
+        }
     }
 }

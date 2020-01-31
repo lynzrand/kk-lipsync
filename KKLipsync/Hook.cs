@@ -63,7 +63,7 @@ namespace KKLipsync
                 var ctrl = new LipDataCreator();
                 AccessTools.PropertySetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new[] { ctrl });
                 var manager = __instance.GetOrAddComponent<LipsyncDebugGui>();
-                manager.reference = ctrl;
+                manager.audioAssist = ctrl;
                 LipsyncConfig.Instance.logger.LogInfo($"Initialized at {__instance.chaID}");
             }
         }
