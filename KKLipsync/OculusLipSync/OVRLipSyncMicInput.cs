@@ -29,6 +29,7 @@ using System.Threading;
 
 [RequireComponent(typeof(AudioSource))]
 
+#pragma warning disable
 public class OVRLipSyncMicInput : MonoBehaviour
 {
     public enum micActivation

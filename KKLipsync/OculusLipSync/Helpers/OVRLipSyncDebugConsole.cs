@@ -24,6 +24,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 
+#pragma warning disable
 public class OVRLipSyncDebugConsole : MonoBehaviour
 {
     public ArrayList messages = new ArrayList();

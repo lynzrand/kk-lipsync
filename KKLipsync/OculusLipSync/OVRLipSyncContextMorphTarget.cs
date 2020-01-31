@@ -23,6 +23,7 @@ limitations under the License.
 using UnityEngine;
 using System.Linq;
 
+#pragma warning disable
 public class OVRLipSyncContextMorphTarget : MonoBehaviour
 {
     // PUBLIC

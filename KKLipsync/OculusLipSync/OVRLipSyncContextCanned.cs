@@ -22,6 +22,7 @@ limitations under the License.
 ************************************************************************************/
 using UnityEngine;
 
+#pragma warning disable
 
 [RequireComponent(typeof(AudioSource))]
 

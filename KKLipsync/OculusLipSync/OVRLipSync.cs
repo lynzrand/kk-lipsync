@@ -24,6 +24,8 @@ using UnityEngine;
 using System;
 using System.Runtime.InteropServices;
 
+#pragma warning disable
+
 //-------------------------------------------------------------------------------------
 // ***** OVRLipSync
 //
