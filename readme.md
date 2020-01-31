@@ -19,7 +19,7 @@ koikatsu/
     OVRLipSync.dll <--
 ```
 
-[releases]
+[releases]: https://github.com/01010101lzy/kk-lipsync/releases
 
 ## License
 
