@@ -2,6 +2,7 @@
 using UnityEngine;
 using ADV.Commands.Chara;
 using BepInEx;
+using System.Linq;
 using BepInEx.Logging;
 using BepInEx.Harmony;
 using HarmonyLib;
@@ -43,8 +44,12 @@ namespace KKLipsync
             public static void NewUpdateBlendShape(ChaControl __instance)
             {
                 var voice = AccessTools.PropertyGetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new object[] { }) as LipDataCreator;
-                if (__instance.asVoice && __instance.asVoice.isPlaying)
-                    voice?.GetLipData(__instance.asVoice);
+                if (__instance.asVoice && __instance.asVoice.isPlaying && voice != null)
+                {
+                    var frame = voice.GetLipData(__instance.asVoice);
+                    // TODO
+                    LipsyncConfig.Instance.frameStore[0] = frame;
+                }
 
                 if (voice == null) LipsyncConfig.Instance.logger.LogWarning("LipDataCreator is null");
 
@@ -60,10 +65,10 @@ namespace KKLipsync
                 ChaControl __instance
             )
             {
-                var ctrl = new LipDataCreator();
+                var ctrl = new LipDataCreator(__instance.chaID);
                 AccessTools.PropertySetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new[] { ctrl });
-                var manager = __instance.GetOrAddComponent<LipsyncDebugGui>();
-                manager.audioAssist = ctrl;
+                //var manager = __instance.GetOrAddComponent<LipsyncDebugGui>();
+                //manager.audioAssist = ctrl;
                 LipsyncConfig.Instance.logger.LogInfo($"Initialized at {__instance.chaID}");
             }
         }
@@ -78,43 +83,146 @@ namespace KKLipsync
             {
                 var sb = new StringBuilder();
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
+                var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;
-                //sb.AppendLine("{");
-                //foreach (var line in nowFace)
-                //{
-                //    sb.AppendLine($"  {line.Key}: {line.Value},");
-                //}
-                //sb.AppendLine("}");
-                //LipsyncConfig.Instance.src.LogInfo($"{__instance.FixedRate}, {sb.ToString()}");
-                // Don't run the original method
-                //nowFace.Clear();
 
-                //if (progress < 0.3f)
-                //{
-                //    nowFace[25] = progress / 0.3f;
-                //    nowFace[27] = 0f;
-                //}
-                //else if (progress < 0.7f)
-                //{
-                //    nowFace[25] = (0.7f - progress) / 0.4f;
-                //    nowFace[27] = (progress - 0.3f) / 0.4f;
-                //}
-                //else
-                //{
-                //    nowFace[25] = 0f;
-                //    nowFace[27] = (1f - progress) / 0.3f;
-                //}
-                //float openness = 0;
-                //if (progress < 0.2f) openness = progress / 0.2f;
-                //else if (progress > 0.8f) openness = (1f - progress) / 0.2f;
-                //else openness = 1;
+                if (LipsyncConfig.Instance.frameStore.TryGetValue(0, out var targetFrame))
+                {
+                    MapFrame(targetFrame, ref nowFace, ref openness);
+                    AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").SetValue(__instance, openness);
+                    AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").SetValue(__instance, nowFace);
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
+            }
 
-                //progress += 0.01f;
-                //if (progress > 1) progress = 0;
+            static readonly Dictionary<int, int> VisemeKKFaceId = new Dictionary<int, int>()
+            {
+                [(int)OVRLipSync.Viseme.aa] = 26,
+                [(int)OVRLipSync.Viseme.CH] = 27,
+                [(int)OVRLipSync.Viseme.DD] = 12,
+                [(int)OVRLipSync.Viseme.E] = 32,
+                [(int)OVRLipSync.Viseme.FF] = 3,
+                [(int)OVRLipSync.Viseme.ih] = 27,
+                [(int)OVRLipSync.Viseme.kk] = 31,
+                [(int)OVRLipSync.Viseme.nn] = 36,
+                [(int)OVRLipSync.Viseme.oh] = 33,
+                [(int)OVRLipSync.Viseme.ou] = 30,
+                [(int)OVRLipSync.Viseme.PP] = 36,
+                [(int)OVRLipSync.Viseme.RR] = 30,
+                // sil does nothing. It has contribution set to 0 below.
+                [(int)OVRLipSync.Viseme.sil] = 0,
+                [(int)OVRLipSync.Viseme.SS] = 27,
 
-                //AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").SetValue(__instance, openness);
+                // /th/ is not seen in faces
+                [(int)OVRLipSync.Viseme.TH] = 12,
+            };
 
-                return true;
+            /// <summary>
+            /// Coeffecient of OVR visemes on openness.
+            /// 
+            /// <para>
+            ///     Vowels always have a .9f contribution, while consonants contributions are 
+            ///     based on their relationship with mouth actions.
+            /// </para>
+            /// </summary>
+            static readonly Dictionary<int, float> VisemeOpennessCoeff = new Dictionary<int, float>()
+            {
+                [(int)OVRLipSync.Viseme.aa] = .9f,
+                [(int)OVRLipSync.Viseme.CH] = .9f,
+                [(int)OVRLipSync.Viseme.DD] = .2f,
+                [(int)OVRLipSync.Viseme.E] = .9f,
+                [(int)OVRLipSync.Viseme.FF] = .2f,
+                [(int)OVRLipSync.Viseme.ih] = .9f,
+                [(int)OVRLipSync.Viseme.kk] = .8f,
+                [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
+                [(int)OVRLipSync.Viseme.oh] = .9f,
+                [(int)OVRLipSync.Viseme.ou] = .9f,
+                [(int)OVRLipSync.Viseme.PP] = 0f,
+                [(int)OVRLipSync.Viseme.RR] = .6f,
+                [(int)OVRLipSync.Viseme.sil] = 0f,       // /sil/ also shouldn't
+                [(int)OVRLipSync.Viseme.SS] = .2f,
+                [(int)OVRLipSync.Viseme.TH] = .6f,
+            };
+
+            static readonly HashSet<int> DisabledFaces = new HashSet<int>()
+            {
+                (int) KKLips.Playful,
+                (int) KKLips.Eating,
+                (int) KKLips.Kiss,
+                (int) KKLips.TongueOut,
+                (int) KKLips.CatLike,
+                (int) KKLips.Triangle,
+                (int) KKLips.CartoonySmile,
+            };
+
+            /// <summary>
+            /// Maps an OVR frame data output by OVR to KoiKatsu face
+            /// </summary>
+            /// <param name="frame">OVR Frame input</param>
+            /// <param name="faceDict">KoiKatsu face blending dictionary output</param>
+            /// <param name="openness">KoiKatsu mouth openness</param>
+            private static void MapFrame(in OVRLipSync.Frame frame, ref Dictionary<int, float> faceDict, ref float openness)
+            {
+                // `openness` is calculated as the sum of all visemes multiplied by their value coefficients
+                var newOpenness = 0f;
+
+                // Face morphing is calculated as base face * (1-openness) + mapped face * openness,
+                // clamped to a total sum of 1.
+                // Hope this can generate a realistic enough face.
+
+                // p.s. for some face types the lipsync morphing is not calculated.
+                // They are:
+                //  - Playful (20)
+                //  - Eating (21)
+                //  - Kiss (23)
+                //  - TongueOut (24)
+                //  - CatLike (37)
+                //  - Triangle (38)
+                //  - CartoonySmile (39)
+
+                // Calculate the morphing needed for _this_ face status.
+                var morphingCoeff = 1f;
+                foreach (var faceId in DisabledFaces)
+                    if (faceDict.TryGetValue(faceId, out float val))
+                        morphingCoeff -= val;
+
+
+                // I used a explicit for loop here because the index is needed
+                for (var i = 0; i < frame.Visemes.Length; i++)
+                {
+                    var x = frame.Visemes[i];
+                    x = Mathf.Pow(x, 1.3f);
+                    // If I didn't get it wrong, openness are clamped inside 0 and 100
+                    newOpenness += x * VisemeOpennessCoeff[i];
+                }
+                newOpenness = Mathf.Clamp(newOpenness * 1.5f, 0f, 1f);
+
+
+                // Rectify old face data
+                morphingCoeff *= Mathf.Clamp(1f - newOpenness * 1.5f, 0, 1);
+                foreach (var key in faceDict.Keys.ToList())
+                    faceDict[key] *= morphingCoeff;
+
+                // Add new face data
+                for (var i = 0; i < frame.Visemes.Length; i++)
+                {
+                    var x = frame.Visemes[i];
+                    var faceId = VisemeKKFaceId[i];
+                    if (faceDict.TryGetValue(faceId, out var val))
+                    {
+                        faceDict[faceId] = val + x * (1 - morphingCoeff);
+                    }
+                    else
+                    {
+                        faceDict[faceId] = x * (1 - morphingCoeff);
+                    }
+                }
+
+                openness = newOpenness;
             }
         }
     }

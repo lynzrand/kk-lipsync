@@ -92,7 +92,8 @@ namespace KKLipsync
         }
         public LipsyncMouthController()
         {
-            creator = new LipDataCreator();
+            // TODO: This is not used, -10023 is a placeholder
+            creator = new LipDataCreator(-10023);
         }
 
         public LipData LipData { get; set; }
@@ -134,23 +135,26 @@ namespace KKLipsync
     /// </summary>
     class LipDataCreator : FBSAssist.AudioAssist
     {
+        private int characterId;
         public const int bufferSize = 512;
         public float[] audioBuffer = new float[bufferSize];
         public double[] doubleBuffer = new double[bufferSize];
 
         private uint contextId = 299;
         //public int verticalScale = 500;
-        MathNet.Filtering.OnlineFilter filter;
+        //MathNet.Filtering.OnlineFilter filter;
 
-        public LipDataCreator()
+        public LipDataCreator(int characterId)
         {
-            filter = MathNet.Filtering.OnlineFilter.CreateLowpass(MathNet.Filtering.ImpulseResponse.Infinite, 1, 0.02);
+            //filter = MathNet.Filtering.OnlineFilter.CreateLowpass(MathNet.Filtering.ImpulseResponse.Infinite, 1, 0.02);
 
             OVRLipSync.Initialize(sampleRate, bufferSize);
 
             var ctx_result = OVRLipSync.CreateContext(ref contextId, OVRLipSync.ContextProviders.Enhanced_with_Laughter, sampleRate, true);
 
-            if (ctx_result != 0) Debug.LogError($"[LipSync] Failed to create context: {contextId}");
+            if (ctx_result != 0) LipsyncConfig.Instance.logger.LogError($"Failed to create context: {contextId}");
+
+            this.characterId = characterId;
         }
 
         public int sampleRate { get => UnityEngine.AudioSettings.outputSampleRate; }
@@ -158,9 +162,9 @@ namespace KKLipsync
 
         public bool isPlaying = false;
 
-        public LipData GetLipData(AudioSource src)
+        public OVRLipSync.Frame GetLipData(AudioSource src)
         {
-            if (src == null) return new LipData();
+            if (src == null) return new OVRLipSync.Frame();
             src.GetOutputData(audioBuffer, 0);
             isPlaying = true;
             //doubleBuffer = Array.ConvertAll(spectrumBuffer, x => (double)x);
@@ -169,20 +173,7 @@ namespace KKLipsync
 
             OVRLipSync.ProcessFrame(contextId, audioBuffer, framedata, false);
 
-
-            //MathNet.Numerics.IntegralTransforms.Fourier.ForwardReal(spectrumBuffer, bufferSize - 2);
-            //for (int i = 0; i < bufferSize / 3; i++)
-            //{
-            //    spectrumBuffer[i] = Mathf.Log(Mathf.Abs(spectrumBuffer[i]));
-            //}
-            //for (int i = bufferSize / 3; i < bufferSize; i++)
-            //{
-            //    spectrumBuffer[i] = 0;
-            //}
-            //MathNet.Numerics.IntegralTransforms.Fourier.InverseReal(spectrumBuffer, bufferSize - 2);
-            //LipsyncConfig.Instance.logger.LogInfo(ListToString(findPeaks(spectrumBuffer)));
-            CheckLogData(src);
-            return new LipData();
+            return framedata;
         }
 
         string ListToString<T>(IList<T> list)
@@ -209,14 +200,6 @@ namespace KKLipsync
             return sb.ToString();
         }
 
-        void CheckLogData(AudioSource src)
-        {
-            if (!Input.GetKeyDown(KeyCode.Comma)) return;
-
-            LipsyncConfig.Instance.logger.LogInfo($"Cepstrum := {ListToString(audioBuffer)}");
-            LipsyncConfig.Instance.logger.LogInfo($"Original := {ListToString(src.GetOutputData(1024, 0))}");
-
-        }
 
         static float threshold = 0.005f;
 

@@ -32,6 +32,51 @@ MIT.
 
 ## Notes
 
+### KoiKatsu's provided mouth shapes
+
+| ID |  Name                | Shape Description            |
+|----| -------------------- | ---------------------------- |
+| 00 | Default              |                             |
+| 01 | Smiling              |
+| 02 | Happy (broad)        |
+| 03 | Happy (moderate)     |
+| 04 | Happy (slight)       |
+| 05 | Excited (broad)      |
+| 06 | Excited (moderate)   |
+| 07 | Excited (slight)     |
+| 08 | Angry #1             | small /e/ mouth
+| 09 | Angry #2             | /ae/ mouth
+| 10 | Serious #1           | /a/ mouth
+| 11 | Serious #2           | /ah/ mouth
+| 12 | Hate                 | looks like /i/ sound, with teeth exposed
+| 13 | Lonely               | small mouth
+| 14 | Impatient            | /ah/
+| 15 | Dissatisfied         | large /u/ mouth
+| 16 | Amazed               | very small mouth
+| 17 | Suprized             | large /o/ mouth
+| 18 | Suprized (moderate)  | smaller than the last one
+| 19 | Smug                 | /eh/ mouth
+| 20 | Playful              | closed mouth with tongue sticked out
+| 21 | Eating               | 
+| 22 | Hold in mouth        | ~~blow___~~
+| 23 | Kiss                 | small kissing mouth
+| 24 | Tongue out           | tongue always stick out. ~~ahegao~~
+| 25 | Small /a/            | <-
+| 26 | Big /a/              | <-
+| 27 | Small /i/            | <-
+| 28 | Big /i/              | <-
+| 29 | Small /u/            | <-
+| 30 | Big /u/              | <-
+| 31 | Small /e/            | <-
+| 32 | Big /e/              | <-
+| 33 | Small /o/            | <-
+| 34 | Big /o/              | <-
+| 35 | Small /n/            | <-
+| 36 | Big /n/              | <- 
+| 37 | Catlike              | 0w0
+| 38 | Triangle             | 0ʌ0
+| 39 | Cartoony smile       | 0u0
+
 ### Call Stack
 
 It all comes from the act of setting an audio source to the character. `ChaControl.SetVoiceTransform()` does this job, setting `ChaControl.asVoice` to an existing Audio Source.
