@@ -10,90 +10,19 @@ using System.Linq;
 namespace KKLipsync
 {
     /// <summary>
-    /// This class replaces <c>FaceBlendShape.MouthCtrl</c>.
-    /// </summary>
-    [Serializable]
-    class LipsyncMouthController : FBSCtrlMouth
-    {
-        /// <summary>
-        /// This method transfers data and replaces the original mouth controller with
-        /// this one.
-        /// </summary>
-        /// <param name="_base"></param>
-        public LipsyncMouthController(FBSCtrlMouth _base)
-        {
-            var trav = Traverse.Create(_base);
-            var trav_this = Traverse.Create(this);
-            trav.Fields().ForEach((field) =>
-            {
-                trav_this.Field(field).SetValue(trav.Field(field).GetValue(_base));
-            });
-
-            // properties should already be synced with their backing fields?
-            //trav.Properties().ForEach((field) =>
-            //{
-            //    trav_this.Field(field).SetValue(trav.Field(field).GetValue());
-            //});
-
-            this.Init();
-        }
-
-        public new void Init()
-        {
-            base.Init();
-        }
-        public LipsyncMouthController()
-        {
-            // TODO: This is not used, -10023 is a placeholder
-            creator = new LipDataCreator(-10023);
-        }
-
-
-
-        public void CalculateBlendShapeNew()
-        {
-            // TODO: Calculate blend shape according to lip data
-
-            foreach (var fbsTarget in this.FBSTarget)
-            {
-                // TODO: do the blending
-            }
-        }
-
-    }
-
-    /// <summary>
-    /// This class replaces <c>ChaControl.fbsCtrl</c>
-    /// </summary>
-    class LipsyncFaceBlender : FaceBlendShape
-    {
-
-    }
-
-    public struct PeakInfo
-    {
-        public float intensity;
-        public int id;
-
-        public override string ToString()
-        {
-            return $"{{{id}, {intensity}}}";
-        }
-    }
-
-    /// <summary>
     /// This class replaces <c>ChaControl.fbsaaVoice</c>.
     /// </summary>
     class LipDataCreator : FBSAssist.AudioAssist
     {
-        private int characterId;
+        private readonly int characterId;
         public const int bufferSize = 1024;
         public float[] audioBuffer = new float[bufferSize];
 
-        private uint contextId = 299;
+        private readonly uint contextId;
 
         public LipDataCreator(int characterId)
         {
+            this.contextId = (uint)characterId;
             OVRLipSync.Initialize(sampleRate, bufferSize);
 
             var ctx_result = OVRLipSync.CreateContext(ref contextId, OVRLipSync.ContextProviders.Enhanced_with_Laughter, sampleRate, true);
@@ -130,5 +59,9 @@ namespace KKLipsync
             return this.GetAudioWaveValue(src, correct);
         }
 
+        ~LipDataCreator()
+        {
+            OVRLipSync.DestroyContext(contextId);
+        }
     }
 }
