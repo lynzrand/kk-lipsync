@@ -17,7 +17,7 @@ namespace KKLipsync
     {
         const string Guid = "me.rynco.kk-lipsync";
         const string PluginName = "KKLipsync";
-        const string PluginVersion = "0.1.0";
+        const string PluginVersion = "0.1.1";
 
         public LipsyncPlugin()
         {
@@ -63,7 +63,7 @@ namespace KKLipsync
                 LipsyncConfig instance = LipsyncConfig.Instance;
                 if (instance.cleaned) return;
 
-                var inactiveFrames = new List<int>();
+                var inactiveFrames = instance.inactiveFrames;
 
                 foreach (var hash in instance.frameStore.Keys)
                 {
@@ -80,6 +80,7 @@ namespace KKLipsync
                 // Cleanup
                 instance.activeFrames.Clear();
                 instance.cleaned = true;
+                instance.inactiveFrames.Clear();
             }
         }
 
@@ -108,7 +109,6 @@ namespace KKLipsync
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(FBSBase __instance)
             {
-                var sb = new StringBuilder();
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
                 var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;
@@ -128,7 +128,7 @@ namespace KKLipsync
 
             static readonly Dictionary<int, int> VisemeKKFaceId = new Dictionary<int, int>()
             {
-                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.BigA,
+                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.SmallA,
                 [(int)OVRLipSync.Viseme.CH] = (int)KKLips.SmallI,
                 [(int)OVRLipSync.Viseme.DD] = (int)KKLips.Hate,
                 [(int)OVRLipSync.Viseme.E] = (int)KKLips.BigE,
@@ -136,7 +136,7 @@ namespace KKLipsync
                 [(int)OVRLipSync.Viseme.ih] = (int)KKLips.BigI,
                 [(int)OVRLipSync.Viseme.kk] = (int)KKLips.SmallE,
                 [(int)OVRLipSync.Viseme.nn] = (int)KKLips.BigN,
-                [(int)OVRLipSync.Viseme.oh] = (int)KKLips.BigO,
+                [(int)OVRLipSync.Viseme.oh] = (int)KKLips.SmallA,
                 [(int)OVRLipSync.Viseme.ou] = (int)KKLips.BigO,
                 [(int)OVRLipSync.Viseme.PP] = (int)KKLips.SmallN,
                 [(int)OVRLipSync.Viseme.RR] = (int)KKLips.SmallE,
@@ -226,6 +226,10 @@ namespace KKLipsync
                     // If I didn't get it wrong, openness are clamped inside 0 and 100
                     newOpenness += x * VisemeOpennessCoeff[i];
                 }
+                {
+                    var laughingAmount = Mathf.Pow(frame.laughterScore, 1.2f);
+                    newOpenness += laughingAmount;
+                }
                 newOpenness = Mathf.Clamp(newOpenness * 3f, 0f, 1.2f);
 
 
@@ -249,6 +253,19 @@ namespace KKLipsync
                         faceDict[faceId] = x * (1 - morphingCoeff);
                     }
                 }
+                {
+                    const int laughId = (int)KKLips.HappyBroad;
+                    if (faceDict.TryGetValue(laughId, out var val))
+                    {
+                        faceDict[laughId] = val + frame.laughterScore * (1 - morphingCoeff);
+                    }
+                    else
+                    {
+                        faceDict[laughId] = frame.laughterScore  * (1 - morphingCoeff);
+                    }
+                }
+
+                
 
                 openness = newOpenness;
             }

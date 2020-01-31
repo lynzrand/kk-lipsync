@@ -12,6 +12,7 @@ namespace KKLipsync
             logger = BepInEx.Logging.Logger.CreateLogSource("LipSync");
             this.frameStore = new Dictionary<int, OVRLipSync.Frame>();
             this.activeFrames = new HashSet<int>();
+            this.inactiveFrames = new List<int>();
         }
 
         public ManualLogSource logger;
@@ -22,6 +23,7 @@ namespace KKLipsync
         public Dictionary<int, OVRLipSync.Frame> frameStore;
 
         public HashSet<int> activeFrames;
+        public List<int> inactiveFrames;
         public bool cleaned = true;
 
         private static LipsyncConfig? _instance;
