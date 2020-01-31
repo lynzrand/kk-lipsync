@@ -48,6 +48,7 @@ namespace KKLipsync
                     // Thus it returns the same value for every run, and we can safely use this value 
                     // to separate between different objects
                     LipsyncConfig.Instance.frameStore[__instance.fbsCtrl.MouthCtrl.GetHashCode()] = frame;
+                    LipsyncConfig.Instance.cleaned = false;
                 }
 
                 if (voice == null) LipsyncConfig.Instance.logger.LogWarning("LipDataCreator is null");
@@ -55,14 +56,15 @@ namespace KKLipsync
                 return;
             }
 
-            [HarmonyPatch(typeof(ChaControl), "LateUpdate")]
+            [HarmonyPatch(typeof(CameraControl), "LateUpdate")]
             [HarmonyPostfix]
-            public static void FrameCleanup(
-                ChaControl __instance
-            )
+            public static void FrameCleanup()
             {
-                var inactiveFrames = new List<int>();
                 LipsyncConfig instance = LipsyncConfig.Instance;
+                if (instance.cleaned) return;
+
+                var inactiveFrames = new List<int>();
+
                 foreach (var hash in instance.frameStore.Keys)
                 {
                     if (!instance.activeFrames.Contains(hash))
@@ -70,13 +72,14 @@ namespace KKLipsync
                         inactiveFrames.Add(hash);
                     }
                 }
-                foreach(var inactiveFrame in inactiveFrames)
+                foreach (var inactiveFrame in inactiveFrames)
                 {
                     instance.frameStore.Remove(inactiveFrame);
                 }
 
                 // Cleanup
                 instance.activeFrames.Clear();
+                instance.cleaned = true;
             }
         }
 

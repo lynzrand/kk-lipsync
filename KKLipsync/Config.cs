@@ -22,6 +22,7 @@ namespace KKLipsync
         public Dictionary<int, OVRLipSync.Frame> frameStore;
 
         public HashSet<int> activeFrames;
+        public bool cleaned = true;
 
         private static LipsyncConfig? _instance;
         public static LipsyncConfig Instance { get => _instance is null ? (_instance = new LipsyncConfig()) : _instance; }
