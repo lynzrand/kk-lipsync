@@ -11,6 +11,7 @@ namespace KKLipsync
         {
             logger = BepInEx.Logging.Logger.CreateLogSource("LipSync");
             this.frameStore = new Dictionary<int, OVRLipSync.Frame>();
+            this.activeFrames = new HashSet<int>();
         }
 
         public ManualLogSource logger;
@@ -19,6 +20,8 @@ namespace KKLipsync
         /// Storage of frames, numbered by character ID
         /// </summary>
         public Dictionary<int, OVRLipSync.Frame> frameStore;
+
+        public HashSet<int> activeFrames;
 
         private static LipsyncConfig? _instance;
         public static LipsyncConfig Instance { get => _instance is null ? (_instance = new LipsyncConfig()) : _instance; }

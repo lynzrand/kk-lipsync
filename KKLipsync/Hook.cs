@@ -30,9 +30,6 @@ namespace KKLipsync
 
             //KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
         }
-
-
-
     }
 
     namespace Hooks
@@ -47,13 +44,39 @@ namespace KKLipsync
                 if (__instance.asVoice && __instance.asVoice.isPlaying && voice != null)
                 {
                     var frame = voice.GetLipData(__instance.asVoice);
-                    // TODO
-                    LipsyncConfig.Instance.frameStore[0] = frame;
+                    //! This method relies on the fact that GetHashCode() is _not_ overridden.
+                    // Thus it returns the same value for every run, and we can safely use this value 
+                    // to separate between different objects
+                    LipsyncConfig.Instance.frameStore[__instance.fbsCtrl.MouthCtrl.GetHashCode()] = frame;
                 }
 
                 if (voice == null) LipsyncConfig.Instance.logger.LogWarning("LipDataCreator is null");
 
                 return;
+            }
+
+            [HarmonyPatch(typeof(ChaControl), "LateUpdate")]
+            [HarmonyPostfix]
+            public static void FrameCleanup(
+                ChaControl __instance
+            )
+            {
+                var inactiveFrames = new List<int>();
+                LipsyncConfig instance = LipsyncConfig.Instance;
+                foreach (var hash in instance.frameStore.Keys)
+                {
+                    if (!instance.activeFrames.Contains(hash))
+                    {
+                        inactiveFrames.Add(hash);
+                    }
+                }
+                foreach(var inactiveFrame in inactiveFrames)
+                {
+                    instance.frameStore.Remove(inactiveFrame);
+                }
+
+                // Cleanup
+                instance.activeFrames.Clear();
             }
         }
 
@@ -71,6 +94,7 @@ namespace KKLipsync
                 //manager.audioAssist = ctrl;
                 LipsyncConfig.Instance.logger.LogInfo($"Initialized at {__instance.chaID}");
             }
+
         }
 
         public static class BlendShapeHook
@@ -86,7 +110,7 @@ namespace KKLipsync
                 var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;
 
-                if (LipsyncConfig.Instance.frameStore.TryGetValue(0, out var targetFrame))
+                if (LipsyncConfig.Instance.frameStore.TryGetValue(__instance.GetHashCode(), out var targetFrame))
                 {
                     MapFrame(targetFrame, ref nowFace, ref openness);
                     AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").SetValue(__instance, openness);
@@ -101,24 +125,24 @@ namespace KKLipsync
 
             static readonly Dictionary<int, int> VisemeKKFaceId = new Dictionary<int, int>()
             {
-                [(int)OVRLipSync.Viseme.aa] = 26,
-                [(int)OVRLipSync.Viseme.CH] = 27,
-                [(int)OVRLipSync.Viseme.DD] = 12,
-                [(int)OVRLipSync.Viseme.E] = 32,
-                [(int)OVRLipSync.Viseme.FF] = 3,
-                [(int)OVRLipSync.Viseme.ih] = 27,
-                [(int)OVRLipSync.Viseme.kk] = 31,
-                [(int)OVRLipSync.Viseme.nn] = 36,
-                [(int)OVRLipSync.Viseme.oh] = 33,
-                [(int)OVRLipSync.Viseme.ou] = 30,
-                [(int)OVRLipSync.Viseme.PP] = 36,
-                [(int)OVRLipSync.Viseme.RR] = 30,
+                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.BigA,
+                [(int)OVRLipSync.Viseme.CH] = (int)KKLips.SmallI,
+                [(int)OVRLipSync.Viseme.DD] = (int)KKLips.Hate,
+                [(int)OVRLipSync.Viseme.E] = (int)KKLips.BigE,
+                [(int)OVRLipSync.Viseme.FF] = (int)KKLips.BigN,
+                [(int)OVRLipSync.Viseme.ih] = (int)KKLips.BigI,
+                [(int)OVRLipSync.Viseme.kk] = (int)KKLips.SmallE,
+                [(int)OVRLipSync.Viseme.nn] = (int)KKLips.BigN,
+                [(int)OVRLipSync.Viseme.oh] = (int)KKLips.BigO,
+                [(int)OVRLipSync.Viseme.ou] = (int)KKLips.BigO,
+                [(int)OVRLipSync.Viseme.PP] = (int)KKLips.SmallN,
+                [(int)OVRLipSync.Viseme.RR] = (int)KKLips.SmallE,
                 // sil does nothing. It has contribution set to 0 below.
-                [(int)OVRLipSync.Viseme.sil] = 0,
-                [(int)OVRLipSync.Viseme.SS] = 27,
+                [(int)OVRLipSync.Viseme.sil] = (int)KKLips.Default,
+                [(int)OVRLipSync.Viseme.SS] = (int)KKLips.SmallI,
 
                 // /th/ is not seen in faces
-                [(int)OVRLipSync.Viseme.TH] = 12,
+                [(int)OVRLipSync.Viseme.TH] = (int)KKLips.Hate,
             };
 
             /// <summary>
@@ -134,9 +158,9 @@ namespace KKLipsync
                 [(int)OVRLipSync.Viseme.aa] = .9f,
                 [(int)OVRLipSync.Viseme.CH] = .9f,
                 [(int)OVRLipSync.Viseme.DD] = .2f,
-                [(int)OVRLipSync.Viseme.E] = .9f,
+                [(int)OVRLipSync.Viseme.E] = 1f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
-                [(int)OVRLipSync.Viseme.ih] = .9f,
+                [(int)OVRLipSync.Viseme.ih] = 1.5f,
                 [(int)OVRLipSync.Viseme.kk] = .8f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
                 [(int)OVRLipSync.Viseme.oh] = .9f,
@@ -195,11 +219,11 @@ namespace KKLipsync
                 for (var i = 0; i < frame.Visemes.Length; i++)
                 {
                     var x = frame.Visemes[i];
-                    x = Mathf.Pow(x, 1.3f);
+                    x = Mathf.Pow(x, 1.2f);
                     // If I didn't get it wrong, openness are clamped inside 0 and 100
                     newOpenness += x * VisemeOpennessCoeff[i];
                 }
-                newOpenness = Mathf.Clamp(newOpenness * 1.5f, 0f, 1f);
+                newOpenness = Mathf.Clamp(newOpenness * 3f, 0f, 1.2f);
 
 
                 // Rectify old face data
@@ -211,6 +235,7 @@ namespace KKLipsync
                 for (var i = 0; i < frame.Visemes.Length; i++)
                 {
                     var x = frame.Visemes[i];
+                    x = Mathf.Clamp(Mathf.Pow(x * 1.5f, 1.2f), 0f, 1.1f);
                     var faceId = VisemeKKFaceId[i];
                     if (faceDict.TryGetValue(faceId, out var val))
                     {
