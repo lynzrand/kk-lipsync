@@ -2,7 +2,7 @@
 
 An experimental lip sync project built for KoiKatsu and AI Shoujou.
 
-This plugin requires BepInEx 5 and Harmony installed.
+This plugin requires BepInEx and Harmony installed.
 
 This plugin uses Oculus's OVR Lip Sync.
 
