@@ -1,6 +1,10 @@
 # KK-Lipsync
 
-An experimental lip sync project built for KoiKatsu and other Illusion games.
+An experimental lip sync project built for KoiKatsu and AI Shoujou.
+
+This plugin requires BepInEx 5 and Harmony installed.
+
+This plugin uses Oculus's OVR Lip Sync.
 
 ## Usage
 
@@ -12,10 +16,22 @@ koikatsu/
         core/
         ...
         KKLipsync.dll <-- 
+        OVRLipSyncRef.dll <--
     KoiKatu_Data/
     ...
     Koikatu.exe
     KoikatuVR.exe
+    OVRLipSync.dll <--
+```
+
+```
+ai-shoujou/
+    BepInEx/
+        plugins/
+            AILipsync.dll <-- 
+            OVRLipSyncRef.dll
+    ...
+    AI-Syoujyo.exe
     OVRLipSync.dll <--
 ```
 
