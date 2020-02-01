@@ -10,6 +10,7 @@ using KKAPI;
 using System.Collections.Generic;
 using System.Text;
 
+
 namespace KKLipsync
 {
     [BepInPlugin(Guid, PluginName, PluginVersion)]
@@ -186,6 +187,8 @@ namespace KKLipsync
                 (int) KKLips.CartoonySmile,
             };
 
+            private const int KKLipCount = 39;
+            private static List<int> scratchpad = new List<int>();
             /// <summary>
             /// Maps an OVR frame data output by OVR to KoiKatsu face
             /// </summary>
@@ -227,7 +230,7 @@ namespace KKLipsync
                     newOpenness += x * VisemeOpennessCoeff[i];
                 }
                 {
-                    var laughingAmount = Mathf.Pow(frame.laughterScore, 1.2f);
+                    var laughingAmount = Mathf.Pow(frame.laughterScore, 1.7f);
                     newOpenness += laughingAmount;
                 }
                 newOpenness = Mathf.Clamp(newOpenness * 3f, 0f, 1.2f);
@@ -235,9 +238,12 @@ namespace KKLipsync
 
                 // Rectify old face data
                 morphingCoeff *= Mathf.Clamp(1f - newOpenness * 1.5f, 0, 1);
-                foreach (var key in faceDict.Keys.ToList())
-                    faceDict[key] *= morphingCoeff;
-
+                {
+                    scratchpad.AddRange(faceDict.Keys);
+                    foreach (var key in scratchpad)
+                        faceDict[key] *= morphingCoeff;
+                    scratchpad.Clear();
+                }
                 // Add new face data
                 for (var i = 0; i < frame.Visemes.Length; i++)
                 {
@@ -261,11 +267,19 @@ namespace KKLipsync
                     }
                     else
                     {
-                        faceDict[laughId] = frame.laughterScore  * (1 - morphingCoeff);
+                        faceDict[laughId] = frame.laughterScore * (1 - morphingCoeff);
                     }
                 }
 
-                
+                {
+                    var sum = faceDict.Sum(val => val.Value);
+                    scratchpad.AddRange(faceDict.Keys);
+                    foreach (var key in scratchpad)
+                        faceDict[key] /= sum;
+                    scratchpad.Clear();
+                }
+
+
 
                 openness = newOpenness;
             }

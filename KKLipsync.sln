@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KKLipsync", "KKLipsync\KKLi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AILipsync", "AILipsync\AILipsync.csproj", "{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OVRLipsync", "OVRLipsync\OVRLipsync.csproj", "{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

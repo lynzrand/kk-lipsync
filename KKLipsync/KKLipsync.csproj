@@ -16,31 +16,37 @@
 
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>ref\0Harmony.dll</HintPath>
+      <HintPath>..\ref\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>ref\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\ref\koikatsu\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>ref\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\ref\koikatsu\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>ref\BepInEx.dll</HintPath>
+      <HintPath>..\ref\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx.Harmony">
-      <HintPath>ref\BepInEx.Harmony.dll</HintPath>
+      <HintPath>..\ref\BepInEx.Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx.Preloader">
+      <HintPath>..\ref\BepInEx.Preloader.dll</HintPath>
     </Reference>
     <Reference Include="KKAPI">
-      <HintPath>ref\KKAPI.dll</HintPath>
+      <HintPath>..\ref\KKAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>..\ref\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>ref\UnityEngine.dll</HintPath>
+      <HintPath>..\ref\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Networking">
-      <HintPath>ref\UnityEngine.Networking.dll</HintPath>
+      <HintPath>..\ref\UnityEngine.Networking.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>ref\UnityEngine.UI.dll</HintPath>
+      <HintPath>..\ref\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -51,6 +57,10 @@
   <ItemGroup>
     <PackageReference Include="MathNet.Filtering" Version="0.4.0" />
     <PackageReference Include="MathNet.Numerics" Version="3.20.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OVRLipsync\OVRLipsync.csproj" />
   </ItemGroup>
 
 </Project>
