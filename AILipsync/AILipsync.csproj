@@ -31,6 +31,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>..\KKLipsync\ref\0Harmony.dll</HintPath>
@@ -62,10 +65,19 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OVRLipsync\OVRLipsync.csproj">
+    <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj">
       <Project>{0a1b9ca8-827c-4e6f-8806-8825a429b2b7}</Project>
-      <Name>OVRLipsync</Name>
+      <Name>OVRLipsyncRef</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Compile Include="..\OVRLipSync\**\*.cs" Exclude="..\OVRLipSync\Properties\AssemblyInfo.cs;&#xD;&#xA;                    ..\OVRLipSync\obj\**;&#xD;&#xA;                    ..\OVRLipSync\bin\**">
+      <Link>OVRLipSync\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </Compile>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>cp $(TargetDir)AILipsync.dll $(TargetDir)OVRLipSyncRef.dll $(SolutionDir)Release/AILipsync/BepInEx/</PostBuildEvent>
+  </PropertyGroup>
 </Project>

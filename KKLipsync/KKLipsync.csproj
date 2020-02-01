@@ -12,6 +12,7 @@
     <PackageProjectUrl>https://github.com/01010101lzy/kk-lipsync</PackageProjectUrl>
     <SignAssembly>true</SignAssembly>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,16 +52,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="MathNet.Filtering" Version="0.4.0" />
     <PackageReference Include="MathNet.Numerics" Version="3.20.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OVRLipsync\OVRLipsync.csproj" />
+    <Folder Include="Properties\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Compile Include="..\OVRLipSync\**\*.cs" Exclude="..\OVRLipSync\Properties\AssemblyInfo.cs;&#xD;&#xA;                    ..\OVRLipSync\obj\**;&#xD;&#xA;                    ..\OVRLipSync\bin\**">
+      <Link>OVRLipSync\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <Visible>false</Visible>
+    </Compile>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="cp ./$(OutDir)KKLipsync.dll ./$(OutDir)OVRLipSyncRef.dll ../Release/KKLipsync/BepInEx/" />
+  </Target>
 
 </Project>
