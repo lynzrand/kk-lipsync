@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29326.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KKLipsync", "KKLipsync\KKLipsync.csproj", "{D07824E3-F53F-4C8E-85CE-689C2640692C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KKLipsync", "KKLipsync\KKLipsync.csproj", "{D07824E3-F53F-4C8E-85CE-689C2640692C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AILipsync", "AILipsync\AILipsync.csproj", "{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OVRLipsyncRef", "OVRLipsync\OVRLipsyncRef.csproj", "{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{D07824E3-F53F-4C8E-85CE-689C2640692C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D07824E3-F53F-4C8E-85CE-689C2640692C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D07824E3-F53F-4C8E-85CE-689C2640692C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAE25FA7-C749-4C63-9436-82E0ED3E53FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

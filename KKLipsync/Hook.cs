@@ -6,9 +6,9 @@ using System.Linq;
 using BepInEx.Logging;
 using BepInEx.Harmony;
 using HarmonyLib;
-using KKAPI;
 using System.Collections.Generic;
 using System.Text;
+
 
 namespace KKLipsync
 {
@@ -50,6 +50,11 @@ namespace KKLipsync
                     LipsyncConfig.Instance.frameStore[__instance.fbsCtrl.MouthCtrl.GetHashCode()] = frame;
                     LipsyncConfig.Instance.cleaned = false;
                 }
+                else if (__instance.asVoice != null && !__instance.asVoice.isPlaying)
+                {
+                    LipsyncConfig.Instance.frameStore.Remove(__instance.fbsCtrl.MouthCtrl.GetHashCode());
+                }
+
 
                 if (voice == null) LipsyncConfig.Instance.logger.LogWarning("LipDataCreator is null");
 
@@ -128,7 +133,7 @@ namespace KKLipsync
 
             static readonly Dictionary<int, int> VisemeKKFaceId = new Dictionary<int, int>()
             {
-                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.SmallA,
+                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.BigA,
                 [(int)OVRLipSync.Viseme.CH] = (int)KKLips.SmallI,
                 [(int)OVRLipSync.Viseme.DD] = (int)KKLips.Hate,
                 [(int)OVRLipSync.Viseme.E] = (int)KKLips.BigE,
@@ -161,12 +166,12 @@ namespace KKLipsync
                 [(int)OVRLipSync.Viseme.aa] = .9f,
                 [(int)OVRLipSync.Viseme.CH] = .9f,
                 [(int)OVRLipSync.Viseme.DD] = .2f,
-                [(int)OVRLipSync.Viseme.E] = 1f,
+                [(int)OVRLipSync.Viseme.E] = .8f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
                 [(int)OVRLipSync.Viseme.ih] = 1.5f,
                 [(int)OVRLipSync.Viseme.kk] = .8f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
-                [(int)OVRLipSync.Viseme.oh] = .9f,
+                [(int)OVRLipSync.Viseme.oh] = .7f,
                 [(int)OVRLipSync.Viseme.ou] = .9f,
                 [(int)OVRLipSync.Viseme.PP] = 0f,
                 [(int)OVRLipSync.Viseme.RR] = .6f,
@@ -186,6 +191,8 @@ namespace KKLipsync
                 (int) KKLips.CartoonySmile,
             };
 
+            private const int KKLipCount = 39;
+            private static List<int> scratchpad = new List<int>();
             /// <summary>
             /// Maps an OVR frame data output by OVR to KoiKatsu face
             /// </summary>
@@ -227,7 +234,7 @@ namespace KKLipsync
                     newOpenness += x * VisemeOpennessCoeff[i];
                 }
                 {
-                    var laughingAmount = Mathf.Pow(frame.laughterScore, 1.2f);
+                    var laughingAmount = Mathf.Pow(frame.laughterScore, 1.7f);
                     newOpenness += laughingAmount;
                 }
                 newOpenness = Mathf.Clamp(newOpenness * 3f, 0f, 1.2f);
@@ -235,9 +242,12 @@ namespace KKLipsync
 
                 // Rectify old face data
                 morphingCoeff *= Mathf.Clamp(1f - newOpenness * 1.5f, 0, 1);
-                foreach (var key in faceDict.Keys.ToList())
-                    faceDict[key] *= morphingCoeff;
-
+                {
+                    scratchpad.AddRange(faceDict.Keys);
+                    foreach (var key in scratchpad)
+                        faceDict[key] *= morphingCoeff;
+                    scratchpad.Clear();
+                }
                 // Add new face data
                 for (var i = 0; i < frame.Visemes.Length; i++)
                 {
@@ -261,11 +271,20 @@ namespace KKLipsync
                     }
                     else
                     {
-                        faceDict[laughId] = frame.laughterScore  * (1 - morphingCoeff);
+                        faceDict[laughId] = frame.laughterScore * (1 - morphingCoeff);
                     }
                 }
 
-                
+                {
+                    var sum = faceDict.Sum(val => val.Value);
+                    if (sum > 1)
+                    {
+                        scratchpad.AddRange(faceDict.Keys);
+                        foreach (var key in scratchpad)
+                            faceDict[key] /= sum;
+                        scratchpad.Clear();
+                    }
+                }
 
                 openness = newOpenness;
             }

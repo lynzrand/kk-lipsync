@@ -26,6 +26,7 @@ namespace KKLipsync
         public List<int> inactiveFrames;
         public bool cleaned = true;
 
+
         private static LipsyncConfig? _instance;
         public static LipsyncConfig Instance { get => _instance is null ? (_instance = new LipsyncConfig()) : _instance; }
     }
