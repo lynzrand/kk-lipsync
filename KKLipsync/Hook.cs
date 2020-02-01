@@ -128,7 +128,7 @@ namespace KKLipsync
 
             static readonly Dictionary<int, int> VisemeKKFaceId = new Dictionary<int, int>()
             {
-                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.SmallA,
+                [(int)OVRLipSync.Viseme.aa] = (int)KKLips.BigA,
                 [(int)OVRLipSync.Viseme.CH] = (int)KKLips.SmallI,
                 [(int)OVRLipSync.Viseme.DD] = (int)KKLips.Hate,
                 [(int)OVRLipSync.Viseme.E] = (int)KKLips.BigE,
@@ -161,12 +161,12 @@ namespace KKLipsync
                 [(int)OVRLipSync.Viseme.aa] = .9f,
                 [(int)OVRLipSync.Viseme.CH] = .9f,
                 [(int)OVRLipSync.Viseme.DD] = .2f,
-                [(int)OVRLipSync.Viseme.E] = 1f,
+                [(int)OVRLipSync.Viseme.E] = .8f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
                 [(int)OVRLipSync.Viseme.ih] = 1.5f,
                 [(int)OVRLipSync.Viseme.kk] = .8f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
-                [(int)OVRLipSync.Viseme.oh] = .9f,
+                [(int)OVRLipSync.Viseme.oh] = .7f,
                 [(int)OVRLipSync.Viseme.ou] = .9f,
                 [(int)OVRLipSync.Viseme.PP] = 0f,
                 [(int)OVRLipSync.Viseme.RR] = .6f,
