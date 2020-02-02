@@ -2,7 +2,7 @@
 
 An experimental lip sync project built for KoiKatsu and AI Shoujou.
 
-This plugin requires BepInEx 5 and Harmony installed.
+This plugin requires BepInEx and Harmony installed.
 
 This plugin uses Oculus's OVR Lip Sync.
 
@@ -29,17 +29,19 @@ ai-shoujou/
     BepInEx/
         plugins/
             AILipsync.dll <-- 
-            OVRLipSyncRef.dll
+            OVRLipSyncRef.dll <--
     ...
     AI-Syoujyo.exe
     OVRLipSync.dll <--
 ```
 
+This plugin has **no** in-game UI.
+
 [releases]: https://github.com/01010101lzy/kk-lipsync/releases
 
 ## License
 
-MIT.
+MIT. The OVR Lip Sync code follow their own license (see `OVRLipsync/Readme.md`).
 
 ---
 
