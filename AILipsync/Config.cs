@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using BepInEx.Logging;
+using BepInEx.Configuration;
 using System.Collections.Generic;
 
 namespace AILipsync
@@ -17,6 +18,12 @@ namespace AILipsync
 
         public ManualLogSource logger;
 
+
+        public float OverdriveFactor = 1.5f;
+
+
+
+
         /// <summary>
         /// Storage of frames, numbered by character ID
         /// </summary>
@@ -30,4 +37,5 @@ namespace AILipsync
         private static LipsyncConfig? _instance;
         public static LipsyncConfig Instance { get => _instance is null ? (_instance = new LipsyncConfig()) : _instance; }
     }
+
 }
