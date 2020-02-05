@@ -1,15 +1,11 @@
-﻿using System;
-using UnityEngine;
-using ADV.Commands.Chara;
+﻿using AIChara;
 using BepInEx;
-using System.Linq;
-using BepInEx.Logging;
+using BepInEx.Configuration;
 using BepInEx.Harmony;
 using HarmonyLib;
 using System.Collections.Generic;
-using System.Text;
-using AIChara;
-using BepInEx.Configuration;
+using System.Linq;
+using UnityEngine;
 
 
 namespace AILipsync
@@ -22,6 +18,7 @@ namespace AILipsync
         const string PluginVersion = "0.1.3";
 
         private const string _OverdriveFactorStr = "Overdrive Factor";
+        private const string _enablePluginStr = "Enable plugin";
 
         public LipsyncPlugin()
         {
@@ -33,8 +30,6 @@ namespace AILipsync
             harmony.PatchAll(typeof(Hooks.BlendShapeHook));
 
             AddConfigs();
-
-            //KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
         }
 
         private void AddConfigs()
@@ -44,6 +39,14 @@ namespace AILipsync
                 overdriveEntry.SettingChanged += (sender, newEntry) =>
                 {
                     LipsyncConfig.Instance.OverdriveFactor = overdriveEntry.Value;
+                };
+            }
+
+            {
+                var enabledEntry = Config.AddSetting(new ConfigDefinition("KKLipsync", _enablePluginStr), true);
+                enabledEntry.SettingChanged += (sender, newEntry) =>
+                {
+                    LipsyncConfig.Instance.enabled = enabledEntry.Value;
                 };
             }
         }
@@ -57,6 +60,10 @@ namespace AILipsync
             [HarmonyPostfix]
             public static void NewUpdateBlendShape(ChaControl __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return;
+
+
                 var voice = AccessTools.PropertyGetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new object[] { }) as LipDataCreator;
                 if (__instance.asVoice != null && __instance.asVoice.isPlaying && voice != null && __instance.GetTongueState() == 0)
                 {
@@ -130,6 +137,10 @@ namespace AILipsync
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(FBSBase __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return true;
+
+
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
                 var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;

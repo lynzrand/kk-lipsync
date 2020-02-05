@@ -18,11 +18,9 @@ namespace AILipsync
 
         public ManualLogSource logger;
 
+        public bool enabled;
 
-        public float OverdriveFactor = 1.5f;
-
-
-
+        public float OverdriveFactor;
 
         /// <summary>
         /// Storage of frames, numbered by character ID

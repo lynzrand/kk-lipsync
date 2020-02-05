@@ -59,12 +59,6 @@
       <Name>OVRLipsyncRef</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
-    <Compile Include="..\OVRLipSync\**\*.cs" Exclude="..\OVRLipSync\Properties\AssemblyInfo.cs;&#xD;&#xA;                    ..\OVRLipSync\obj\**;&#xD;&#xA;                    ..\OVRLipSync\bin\**">
-      <Link>OVRLipSync\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <Visible>false</Visible>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>

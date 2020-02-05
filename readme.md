@@ -35,9 +35,31 @@ ai-shoujou/
     OVRLipSync.dll <--
 ```
 
-This plugin has **no** in-game UI.
+This plugin has **no** in-game UI. Simply install and see the difference.
 
 [releases]: https://github.com/01010101lzy/kk-lipsync/releases
+
+## Changelog
+
+### 0.1.3
+
+- [AILipsync] ADDED overdrive factor config to make mouth motion larger
+- ADDED config option to toggle lipsync (plugin can be turned off when encountering issues)
+- FIXED mouth openness can't be preserved when editing multiple characters in Studio
+
+### 0.1.2
+
+- [AILipsync] ADDED support for AI Shoujou
+- Refactored folder structure
+
+### 0.1.1
+
+- Fixed an issue where morphing coefficients were wrong
+- Fixed stuttering in some cases
+
+### 0.1.0
+
+Initiali release.
 
 ## License
 

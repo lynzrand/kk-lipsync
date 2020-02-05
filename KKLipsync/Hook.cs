@@ -1,13 +1,10 @@
-﻿using System;
-using UnityEngine;
-using ADV.Commands.Chara;
-using BepInEx;
-using System.Linq;
-using BepInEx.Logging;
+﻿using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Harmony;
 using HarmonyLib;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using UnityEngine;
 
 
 namespace KKLipsync
@@ -17,7 +14,10 @@ namespace KKLipsync
     {
         const string Guid = "me.rynco.kk-lipsync";
         const string PluginName = "KKLipsync";
-        const string PluginVersion = "0.1.1";
+        const string PluginVersion = "0.1.3";
+
+        private const string _enablePluginStr = "Enable plugin";
+
 
         public LipsyncPlugin()
         {
@@ -28,7 +28,18 @@ namespace KKLipsync
             harmony.PatchAll(typeof(Hooks.AssistHook));
             harmony.PatchAll(typeof(Hooks.BlendShapeHook));
 
-            //KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
+            AddConfigs();
+        }
+
+        private void AddConfigs()
+        {
+            {
+                var enabledEntry = Config.AddSetting(new ConfigDefinition("KKLipsync", _enablePluginStr), true);
+                enabledEntry.SettingChanged += (sender, newEntry) =>
+                {
+                    LipsyncConfig.Instance.enabled = enabledEntry.Value;
+                };
+            }
         }
     }
 
@@ -40,8 +51,12 @@ namespace KKLipsync
             [HarmonyPostfix]
             public static void NewUpdateBlendShape(ChaControl __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return;
+
+
                 var voice = AccessTools.PropertyGetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new object[] { }) as LipDataCreator;
-                if (__instance.asVoice && __instance.asVoice.isPlaying && voice != null)
+                if (__instance.asVoice != null && __instance.asVoice.isPlaying && voice != null)
                 {
                     var frame = voice.GetLipData(__instance.asVoice);
                     //! This method relies on the fact that GetHashCode() is _not_ overridden.
@@ -101,7 +116,10 @@ namespace KKLipsync
                 AccessTools.PropertySetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new[] { ctrl });
                 //var manager = __instance.GetOrAddComponent<LipsyncDebugGui>();
                 //manager.audioAssist = ctrl;
+
+#if DEBUG
                 LipsyncConfig.Instance.logger.LogInfo($"Initialized at {__instance.chaID}");
+#endif
             }
 
         }
@@ -114,13 +132,24 @@ namespace KKLipsync
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(FBSBase __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return true;
+
+
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
                 var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;
 
-                if (LipsyncConfig.Instance.frameStore.TryGetValue(__instance.GetHashCode(), out var targetFrame))
+#if DEBUG
+                LipsyncConfig.Instance.logger.LogDebug($"Lipsync {__instance.GetHashCode()}: Openness {openness}");
+#endif
+
+                if (openness <= -0.1f && LipsyncConfig.Instance.frameStore.TryGetValue(__instance.GetHashCode(), out var targetFrame))
                 {
                     MapFrame(targetFrame, ref nowFace, ref openness);
+#if DEBUG
+                    LipsyncConfig.Instance.logger.LogDebug($"Lipsync {__instance.GetHashCode()}: Calculated Openness {openness}");
+#endif
                     AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").SetValue(__instance, openness);
                     AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").SetValue(__instance, nowFace);
                     return true;

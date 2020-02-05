@@ -68,13 +68,6 @@
     <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
-    <Compile Include="..\OVRLipSync\**\*.cs" Exclude="..\OVRLipSync\Properties\AssemblyInfo.cs;&#xD;&#xA;                    ..\OVRLipSync\obj\**;&#xD;&#xA;                    ..\OVRLipSync\bin\**">
-      <Link>OVRLipSync\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <Visible>false</Visible>
-    </Compile>
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="cp ./$(OutDir)KKLipsync.dll ./$(OutDir)OVRLipSyncRef.dll ../Release/KKLipsync/BepInEx/" />
   </Target>

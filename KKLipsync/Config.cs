@@ -17,6 +17,8 @@ namespace KKLipsync
 
         public ManualLogSource logger;
 
+        public bool enabled;
+
         /// <summary>
         /// Storage of frames, numbered by character ID
         /// </summary>
