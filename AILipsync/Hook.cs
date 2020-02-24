@@ -1,15 +1,11 @@
-﻿using System;
-using UnityEngine;
-using ADV.Commands.Chara;
+﻿using AIChara;
 using BepInEx;
-using System.Linq;
-using BepInEx.Logging;
+using BepInEx.Configuration;
 using BepInEx.Harmony;
 using HarmonyLib;
 using System.Collections.Generic;
-using System.Text;
-using AIChara;
-
+using System.Linq;
+using UnityEngine;
 
 
 namespace AILipsync
@@ -19,7 +15,10 @@ namespace AILipsync
     {
         const string Guid = "me.rynco.ai-lipsync";
         const string PluginName = "AILipsync";
-        const string PluginVersion = "0.1.2";
+        const string PluginVersion = "0.1.3";
+
+        private const string _OverdriveFactorStr = "Overdrive Factor";
+        private const string _enablePluginStr = "Enable plugin";
 
         public LipsyncPlugin()
         {
@@ -30,7 +29,26 @@ namespace AILipsync
             harmony.PatchAll(typeof(Hooks.AssistHook));
             harmony.PatchAll(typeof(Hooks.BlendShapeHook));
 
-            //KKAPI.Chara.CharacterApi.RegisterExtraBehaviour<LipsyncController>(Guid);
+            AddConfigs();
+        }
+
+        private void AddConfigs()
+        {
+            {
+                var overdriveEntry = Config.AddSetting(new ConfigDefinition("AILipsync", _OverdriveFactorStr), 1.5f, new ConfigDescription("How much would this plugin try to overdrive when morphing the mouth shape. Making it too large could lead to weird faces.", new AcceptableValueRange<float>(0f, 3f)));
+                overdriveEntry.SettingChanged += (sender, newEntry) =>
+                {
+                    LipsyncConfig.Instance.OverdriveFactor = overdriveEntry.Value;
+                };
+            }
+
+            {
+                var enabledEntry = Config.AddSetting(new ConfigDefinition("KKLipsync", _enablePluginStr), true);
+                enabledEntry.SettingChanged += (sender, newEntry) =>
+                {
+                    LipsyncConfig.Instance.enabled = enabledEntry.Value;
+                };
+            }
         }
     }
 
@@ -42,8 +60,12 @@ namespace AILipsync
             [HarmonyPostfix]
             public static void NewUpdateBlendShape(ChaControl __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return;
+
+
                 var voice = AccessTools.PropertyGetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new object[] { }) as LipDataCreator;
-                if (__instance.asVoice != null && __instance.asVoice.isPlaying && voice != null)
+                if (__instance.asVoice != null && __instance.asVoice.isPlaying && voice != null && __instance.GetTongueState() == 0)
                 {
                     var frame = voice.GetLipData(__instance.asVoice);
                     //! This method relies on the fact that GetHashCode() is _not_ overridden.
@@ -52,7 +74,7 @@ namespace AILipsync
                     LipsyncConfig.Instance.frameStore[__instance.fbsCtrl.MouthCtrl.GetHashCode()] = frame;
                     LipsyncConfig.Instance.cleaned = false;
                 }
-                else if (__instance.asVoice != null && !__instance.asVoice.isPlaying)
+                else if ((__instance.asVoice != null && !__instance.asVoice.isPlaying) || __instance.GetTongueState() != 0)
                 {
                     LipsyncConfig.Instance.frameStore.Remove(__instance.fbsCtrl.MouthCtrl.GetHashCode());
                 }
@@ -115,6 +137,10 @@ namespace AILipsync
             [HarmonyPrefix]
             public static bool NewCalcBlendShape(FBSBase __instance)
             {
+                var enabled = LipsyncConfig.Instance.enabled;
+                if (!enabled) return true;
+
+
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
                 var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
                 if (nowFace is null) return true;
@@ -161,7 +187,7 @@ namespace AILipsync
                 [(int)OVRLipSync.Viseme.DD] = .3f,
                 [(int)OVRLipSync.Viseme.E] = 1f,
                 [(int)OVRLipSync.Viseme.FF] = .6f,
-                [(int)OVRLipSync.Viseme.ih] = 1f,
+                [(int)OVRLipSync.Viseme.ih] = 1.2f,
                 [(int)OVRLipSync.Viseme.kk] = .8f,
                 [(int)OVRLipSync.Viseme.nn] = 1f,
                 [(int)OVRLipSync.Viseme.oh] = 1f,
@@ -188,7 +214,7 @@ namespace AILipsync
                 [(int)OVRLipSync.Viseme.DD] = .2f,
                 [(int)OVRLipSync.Viseme.E] = .8f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
-                [(int)OVRLipSync.Viseme.ih] = 1.5f,
+                [(int)OVRLipSync.Viseme.ih] = 1f,
                 [(int)OVRLipSync.Viseme.kk] = .8f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
                 [(int)OVRLipSync.Viseme.oh] = .7f,
@@ -220,6 +246,9 @@ namespace AILipsync
             {
                 // `openness` is calculated as the sum of all visemes multiplied by their value coefficients. Because the vowel faces has no morphing when changing openness, this value only effects the base face.
                 var newOpenness = 0f;
+
+                // Overdrive Factor is the factor that we overdrive the morphing process to get more significant facial expression.
+                var overdriveFactor = LipsyncConfig.Instance.OverdriveFactor;
 
                 // Face morphing is calculated as base face * (1-openness) + mapped face * openness,
                 // clamped to a total sum of 1.
@@ -264,28 +293,28 @@ namespace AILipsync
                     var faceId = VisemeKKFaceId[i];
                     if (faceDict.TryGetValue(faceId, out var val))
                     {
-                        faceDict[faceId] = val + x * morphingCoeff * VisemeBlendCoeff[i];
+                        faceDict[faceId] = val + x * morphingCoeff * VisemeBlendCoeff[i] * overdriveFactor;
                     }
                     else
                     {
-                        faceDict[faceId] = x * morphingCoeff * VisemeBlendCoeff[i];
+                        faceDict[faceId] = x * morphingCoeff * VisemeBlendCoeff[i] * overdriveFactor;
                     }
                 }
                 {
                     const int laughId = (int)AILips.Smile;
                     if (faceDict.TryGetValue(laughId, out var val))
                     {
-                        faceDict[laughId] = val + frame.laughterScore * (1 - morphingCoeff);
+                        faceDict[laughId] = val + frame.laughterScore * (1 - morphingCoeff) * overdriveFactor;
                     }
                     else
                     {
-                        faceDict[laughId] = frame.laughterScore * (1 - morphingCoeff);
+                        faceDict[laughId] = frame.laughterScore * (1 - morphingCoeff) * overdriveFactor;
                     }
                 }
 
                 {
                     var sum = faceDict.Sum(val => val.Value);
-                    if (sum > 1)
+                    if (sum > overdriveFactor)
                     {
                         scratchpad.AddRange(faceDict.Keys);
                         foreach (var key in scratchpad)

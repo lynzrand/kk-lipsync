@@ -15,6 +15,10 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>..\ref\0Harmony.dll</HintPath>
@@ -62,13 +66,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
-    <Compile Include="..\OVRLipSync\**\*.cs" Exclude="..\OVRLipSync\Properties\AssemblyInfo.cs;&#xD;&#xA;                    ..\OVRLipSync\obj\**;&#xD;&#xA;                    ..\OVRLipSync\bin\**">
-      <Link>OVRLipSync\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <Visible>false</Visible>
-    </Compile>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

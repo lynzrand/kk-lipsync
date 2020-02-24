@@ -11,16 +11,32 @@ namespace KKLipsync
         {
             logger = BepInEx.Logging.Logger.CreateLogSource("LipSync");
             this.frameStore = new Dictionary<int, OVRLipSync.Frame>();
+            this.baseFaceStore = new Dictionary<int, Dictionary<int, float>>();
+            this.lastFaceStore = new Dictionary<int, Dictionary<int, float>>();
             this.activeFrames = new HashSet<int>();
             this.inactiveFrames = new List<int>();
         }
 
         public ManualLogSource logger;
 
+        public bool enabled = true;
+
+        public float overdriveFactor = 1f;
+
         /// <summary>
-        /// Storage of frames, numbered by character ID
+        /// Storage of frames, numbered by character hash
         /// </summary>
         public Dictionary<int, OVRLipSync.Frame> frameStore;
+
+        /// <summary>
+        /// Storage of face base status, numbered by character hash
+        /// </summary>
+        public Dictionary<int, Dictionary<int, float>> baseFaceStore;
+
+        /// <summary>
+        /// Storage of character face's last status to keep track of which has changed, numbered by character hash
+        /// </summary>
+        public Dictionary<int, Dictionary<int, float>> lastFaceStore;
 
         public HashSet<int> activeFrames;
         public List<int> inactiveFrames;
