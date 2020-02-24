@@ -2,8 +2,10 @@
 using BepInEx.Configuration;
 using BepInEx.Harmony;
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 
@@ -39,6 +41,10 @@ namespace KKLipsync
                 {
                     LipsyncConfig.Instance.enabled = enabledEntry.Value;
                 };
+                enabledEntry.ConfigFile.ConfigReloaded += (sender, cfg) =>
+                {
+                    LipsyncConfig.Instance.enabled = enabledEntry.Value;
+                };
             }
         }
     }
@@ -56,18 +62,23 @@ namespace KKLipsync
 
 
                 var voice = AccessTools.PropertyGetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new object[] { }) as LipDataCreator;
-                if (__instance.asVoice != null && __instance.asVoice.isPlaying && voice != null)
+                AudioSource asVoice = __instance.asVoice;
+                if (asVoice != null && asVoice.isPlaying && asVoice.time <= asVoice.clip.length && voice != null)
                 {
-                    var frame = voice.GetLipData(__instance.asVoice);
+                    var frame = voice.GetLipData(asVoice);
                     //! This method relies on the fact that GetHashCode() is _not_ overridden.
                     // Thus it returns the same value for every run, and we can safely use this value 
                     // to separate between different objects
                     LipsyncConfig.Instance.frameStore[__instance.fbsCtrl.MouthCtrl.GetHashCode()] = frame;
                     LipsyncConfig.Instance.cleaned = false;
                 }
-                else if (__instance.asVoice != null && !__instance.asVoice.isPlaying)
+                else if (asVoice == null || voice == null)
+                {
+                }
+                else
                 {
                     LipsyncConfig.Instance.frameStore.Remove(__instance.fbsCtrl.MouthCtrl.GetHashCode());
+
                 }
 
 
@@ -78,7 +89,7 @@ namespace KKLipsync
 
             [HarmonyPatch(typeof(CameraControl), "LateUpdate")]
             [HarmonyPostfix]
-            public static void FrameCleanup()
+            public static void FrameCleanup(CameraControl __instance)
             {
                 LipsyncConfig instance = LipsyncConfig.Instance;
                 if (instance.cleaned) return;
@@ -95,6 +106,8 @@ namespace KKLipsync
                 foreach (var inactiveFrame in inactiveFrames)
                 {
                     instance.frameStore.Remove(inactiveFrame);
+                    instance.baseFaceStore.Remove(inactiveFrame);
+                    instance.lastFaceStore.Remove(inactiveFrame);
                 }
 
                 // Cleanup
@@ -116,10 +129,6 @@ namespace KKLipsync
                 AccessTools.PropertySetter(typeof(ChaControl), "fbsaaVoice").Invoke(__instance, new[] { ctrl });
                 //var manager = __instance.GetOrAddComponent<LipsyncDebugGui>();
                 //manager.audioAssist = ctrl;
-
-#if DEBUG
-                LipsyncConfig.Instance.logger.LogInfo($"Initialized at {__instance.chaID}");
-#endif
             }
 
         }
@@ -135,22 +144,31 @@ namespace KKLipsync
                 var enabled = LipsyncConfig.Instance.enabled;
                 if (!enabled) return true;
 
-
                 var nowFace = AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").GetValue(__instance) as Dictionary<int, float>;
-                var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").GetValue(__instance);
+
                 if (nowFace is null) return true;
 
-#if DEBUG
-                LipsyncConfig.Instance.logger.LogDebug($"Lipsync {__instance.GetHashCode()}: Openness {openness}");
-#endif
+                LipsyncConfig cfg = LipsyncConfig.Instance;
 
-                if (openness <= -0.1f && LipsyncConfig.Instance.frameStore.TryGetValue(__instance.GetHashCode(), out var targetFrame))
+                if (cfg.frameStore.TryGetValue(__instance.GetHashCode(), out var targetFrame))
                 {
-                    MapFrame(targetFrame, ref nowFace, ref openness);
-#if DEBUG
-                    LipsyncConfig.Instance.logger.LogDebug($"Lipsync {__instance.GetHashCode()}: Calculated Openness {openness}");
-#endif
-                    AccessTools.Field(typeof(FBSCtrlMouth), "FixedRate").SetValue(__instance, openness);
+
+                    var openness = (float)AccessTools.Field(typeof(FBSCtrlMouth), "openRate").GetValue(__instance);
+
+                    if (!cfg.baseFaceStore.TryGetValue(__instance.GetHashCode(), out var baseFace))
+                    {
+                        baseFace = new Dictionary<int, float>();
+                        cfg.baseFaceStore[__instance.GetHashCode()] = baseFace;
+                    }
+
+                    if (!cfg.lastFaceStore.TryGetValue(__instance.GetHashCode(), out var lastFace))
+                    {
+                        lastFace = new Dictionary<int, float>();
+                        cfg.lastFaceStore[__instance.GetHashCode()] = lastFace;
+                    }
+
+                    MapFrame(targetFrame, ref baseFace, ref lastFace, ref nowFace, ref openness);
+                    AccessTools.Field(typeof(FBSCtrlMouth), "openRate").SetValue(__instance, openness);
                     AccessTools.Field(typeof(FBSCtrlMouth), "dictNowFace").SetValue(__instance, nowFace);
                     return true;
                 }
@@ -192,16 +210,16 @@ namespace KKLipsync
             /// </summary>
             static readonly Dictionary<int, float> VisemeOpennessCoeff = new Dictionary<int, float>()
             {
-                [(int)OVRLipSync.Viseme.aa] = .9f,
-                [(int)OVRLipSync.Viseme.CH] = .9f,
+                [(int)OVRLipSync.Viseme.aa] = 1.1f,
+                [(int)OVRLipSync.Viseme.CH] = 1.1f,
                 [(int)OVRLipSync.Viseme.DD] = .2f,
                 [(int)OVRLipSync.Viseme.E] = .8f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
-                [(int)OVRLipSync.Viseme.ih] = 1.5f,
-                [(int)OVRLipSync.Viseme.kk] = .8f,
+                [(int)OVRLipSync.Viseme.ih] = 2f,
+                [(int)OVRLipSync.Viseme.kk] = 1.1f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
                 [(int)OVRLipSync.Viseme.oh] = .7f,
-                [(int)OVRLipSync.Viseme.ou] = .9f,
+                [(int)OVRLipSync.Viseme.ou] = 1.1f,
                 [(int)OVRLipSync.Viseme.PP] = 0f,
                 [(int)OVRLipSync.Viseme.RR] = .6f,
                 [(int)OVRLipSync.Viseme.sil] = 0f,       // /sil/ also shouldn't
@@ -209,16 +227,74 @@ namespace KKLipsync
                 [(int)OVRLipSync.Viseme.TH] = .6f,
             };
 
+
+            /// <summary>
+            /// Coeffecient of OVR visemes on face morphing.
+            /// 
+            /// <para>
+            ///     Vowels always have a .9f contribution, while consonants contributions are 
+            ///     based on their relationship with mouth actions.
+            /// </para>
+            /// </summary>
+            static readonly Dictionary<int, float> VisemeOverdriveFactor = new Dictionary<int, float>()
+            {
+                [(int)OVRLipSync.Viseme.aa] = 1f,
+                [(int)OVRLipSync.Viseme.CH] = 1f,
+                [(int)OVRLipSync.Viseme.DD] = 1f,
+                [(int)OVRLipSync.Viseme.E] = 1f,
+                [(int)OVRLipSync.Viseme.FF] = .9f,
+                [(int)OVRLipSync.Viseme.ih] = 2f,
+                [(int)OVRLipSync.Viseme.kk] = 1f,
+                [(int)OVRLipSync.Viseme.nn] = 0f,
+                [(int)OVRLipSync.Viseme.oh] = 1f,
+                [(int)OVRLipSync.Viseme.ou] = 2f,
+                [(int)OVRLipSync.Viseme.PP] = 0f,
+                [(int)OVRLipSync.Viseme.RR] = 1f,
+                [(int)OVRLipSync.Viseme.sil] = 0f,
+                [(int)OVRLipSync.Viseme.SS] = .8f,
+                [(int)OVRLipSync.Viseme.TH] = 1f,
+            };
+
             static readonly HashSet<int> DisabledFaces = new HashSet<int>()
             {
                 (int) KKLips.Playful,
-                (int) KKLips.Eating,
+                // (int) KKLips.Eating,
                 (int) KKLips.Kiss,
                 (int) KKLips.TongueOut,
+                (int) KKLips.HoldInMouth,
+                (int) KKLips.Eating,
                 (int) KKLips.CatLike,
                 (int) KKLips.Triangle,
                 (int) KKLips.CartoonySmile,
             };
+
+            private static string PrettyPrintDictionary<TK, TV>(Dictionary<TK, TV> dict)
+            {
+                var sb = new StringBuilder();
+                sb.Append("{");
+                foreach (var kv in dict)
+                {
+                    sb.AppendFormat(" '{0}': {1}", kv.Key, kv.Value);
+                }
+                sb.AppendLine(" }");
+                return sb.ToString();
+            }
+
+            private static bool CompareDictionary<TK, TV>(Dictionary<TK, TV> lhs, Dictionary<TK, TV> rhs)
+                where TV : IEquatable<TV>
+            {
+                if (lhs.Count != rhs.Count) return false;
+                foreach (var kv in lhs)
+                {
+                    if (rhs.TryGetValue(kv.Key, out var rv))
+                    {
+                        if (EqualityComparer<TV>.Default.Equals(kv.Value, rv)) continue;
+                        else return false;
+                    }
+                    else return false;
+                }
+                return true;
+            }
 
             private const int KKLipCount = 39;
             private static List<int> scratchpad = new List<int>();
@@ -226,10 +302,39 @@ namespace KKLipsync
             /// Maps an OVR frame data output by OVR to KoiKatsu face
             /// </summary>
             /// <param name="frame">OVR Frame input</param>
-            /// <param name="faceDict">KoiKatsu face blending dictionary output</param>
+            /// <param name="nowFace">KoiKatsu face blending dictionary output</param>
             /// <param name="openness">KoiKatsu mouth openness</param>
-            private static void MapFrame(in OVRLipSync.Frame frame, ref Dictionary<int, float> faceDict, ref float openness)
+            private static void MapFrame(
+                in OVRLipSync.Frame frame,
+                ref Dictionary<int, float> baseFace,
+                ref Dictionary<int, float> lastFace,
+                ref Dictionary<int, float> nowFace,
+                ref float openness)
             {
+                if (CompareDictionary(lastFace, nowFace))
+                {
+                    // There's no other code that changed this variable
+                    nowFace.Clear();
+                    foreach (var refItem in baseFace)
+                    {
+                        nowFace.Add(refItem.Key, refItem.Value);
+                    }
+                }
+                else
+                {
+                    // Someone has updated this variable. Update to latest
+                    baseFace.Clear();
+                    foreach (var refItem in nowFace)
+                    {
+                        baseFace.Add(refItem.Key, refItem.Value);
+                    }
+
+#if DEBUG
+                    if (nowFace.TryGetValue(23, out var val23) && val23 > 0.1) { LipsyncConfig.Instance.logger.LogMessage($"Kissing detected: {val23}"); }
+                    LipsyncConfig.Instance.logger.LogInfo($"Detected update at {nowFace.GetHashCode()}:\nnew:{PrettyPrintDictionary(nowFace)}");
+#endif
+                }
+
                 // `openness` is calculated as the sum of all visemes multiplied by their value coefficients
                 var newOpenness = 0f;
 
@@ -250,8 +355,8 @@ namespace KKLipsync
                 // Calculate the morphing needed for _this_ face status.
                 var morphingCoeff = 1f;
                 foreach (var faceId in DisabledFaces)
-                    if (faceDict.TryGetValue(faceId, out float val))
-                        morphingCoeff -= val;
+                    if (nowFace.TryGetValue(faceId, out float val))
+                        morphingCoeff -= val * morphingCoeff;
 
 
                 // I used a explicit for loop here because the index is needed
@@ -259,22 +364,21 @@ namespace KKLipsync
                 {
                     var x = frame.Visemes[i];
                     x = Mathf.Pow(x, 1.2f);
-                    // If I didn't get it wrong, openness are clamped inside 0 and 100
                     newOpenness += x * VisemeOpennessCoeff[i];
                 }
                 {
                     var laughingAmount = Mathf.Pow(frame.laughterScore, 1.7f);
                     newOpenness += laughingAmount;
                 }
-                newOpenness = Mathf.Clamp(newOpenness * 3f, 0f, 1.2f);
 
+                newOpenness = Mathf.Clamp(newOpenness * 1.5f, 0f, 1f);
+                morphingCoeff *= Mathf.Clamp(newOpenness * 3f, 0f, .95f);
 
                 // Rectify old face data
-                morphingCoeff *= Mathf.Clamp(1f - newOpenness * 1.5f, 0, 1);
                 {
-                    scratchpad.AddRange(faceDict.Keys);
+                    scratchpad.AddRange(nowFace.Keys);
                     foreach (var key in scratchpad)
-                        faceDict[key] *= morphingCoeff;
+                        nowFace[key] *= (1 - morphingCoeff);
                     scratchpad.Clear();
                 }
                 // Add new face data
@@ -283,39 +387,52 @@ namespace KKLipsync
                     var x = frame.Visemes[i];
                     x = Mathf.Clamp(Mathf.Pow(x * 1.5f, 1.2f), 0f, 1.1f);
                     var faceId = VisemeKKFaceId[i];
-                    if (faceDict.TryGetValue(faceId, out var val))
+                    if (nowFace.TryGetValue(faceId, out var val))
                     {
-                        faceDict[faceId] = val + x * (1 - morphingCoeff);
+                        nowFace[faceId] = val + x * morphingCoeff * VisemeOverdriveFactor[i];
                     }
                     else
                     {
-                        faceDict[faceId] = x * (1 - morphingCoeff);
+                        nowFace[faceId] = x * morphingCoeff * VisemeOverdriveFactor[i];
                     }
                 }
                 {
                     const int laughId = (int)KKLips.HappyBroad;
-                    if (faceDict.TryGetValue(laughId, out var val))
+                    if (nowFace.TryGetValue(laughId, out var val))
                     {
-                        faceDict[laughId] = val + frame.laughterScore * (1 - morphingCoeff);
+                        nowFace[laughId] = val + frame.laughterScore * morphingCoeff;
                     }
                     else
                     {
-                        faceDict[laughId] = frame.laughterScore * (1 - morphingCoeff);
+                        nowFace[laughId] = frame.laughterScore * morphingCoeff;
                     }
                 }
+
+                //{
+                //    var sum = nowFace.Sum(val => val.Value);
+                //    if (sum > 1.2)
+                //    {
+                //        scratchpad.AddRange(nowFace.Keys);
+                //        foreach (var key in scratchpad)
+                //            nowFace[key] /= sum / 1.2f;
+                //        scratchpad.Clear();
+                //    }
+                //}
+
+                openness = newOpenness * morphingCoeff + openness * (1 - morphingCoeff);
 
                 {
-                    var sum = faceDict.Sum(val => val.Value);
-                    if (sum > 1)
+                    // update lastFace to be the same as this face
+                    lastFace.Clear();
+                    foreach (var entry in nowFace)
                     {
-                        scratchpad.AddRange(faceDict.Keys);
-                        foreach (var key in scratchpad)
-                            faceDict[key] /= sum;
-                        scratchpad.Clear();
+                        lastFace.Add(entry.Key, entry.Value);
                     }
-                }
 
-                openness = newOpenness;
+#if DEBUG
+                    LipsyncConfig.Instance.logger.LogInfo($"Face updated:\nnew:{PrettyPrintDictionary(nowFace)}");
+#endif
+                }
             }
         }
     }
