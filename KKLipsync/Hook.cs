@@ -214,16 +214,16 @@ namespace KKLipsync
             /// </summary>
             static readonly Dictionary<int, float> VisemeOpennessCoeff = new Dictionary<int, float>()
             {
-                [(int)OVRLipSync.Viseme.aa] = 1.1f,
-                [(int)OVRLipSync.Viseme.CH] = 1.1f,
+                [(int)OVRLipSync.Viseme.aa] = 0.9f,
+                [(int)OVRLipSync.Viseme.CH] = 0.9f,
                 [(int)OVRLipSync.Viseme.DD] = .2f,
                 [(int)OVRLipSync.Viseme.E] = .8f,
                 [(int)OVRLipSync.Viseme.FF] = .2f,
                 [(int)OVRLipSync.Viseme.ih] = 2f,
-                [(int)OVRLipSync.Viseme.kk] = 1.1f,
+                [(int)OVRLipSync.Viseme.kk] = 0.4f,
                 [(int)OVRLipSync.Viseme.nn] = 0f,       // /nn/ should not produce visible mouth actions
                 [(int)OVRLipSync.Viseme.oh] = .7f,
-                [(int)OVRLipSync.Viseme.ou] = 1.1f,
+                [(int)OVRLipSync.Viseme.ou] = 0.7f,
                 [(int)OVRLipSync.Viseme.PP] = 0f,
                 [(int)OVRLipSync.Viseme.RR] = .6f,
                 [(int)OVRLipSync.Viseme.sil] = 0f,       // /sil/ also shouldn't

@@ -52,7 +52,7 @@ namespace KKLipsync
 
         public float GetLegacyAudioWaveValue(AudioSource src, float correct = 2)
         {
-            this.GetLipData(src);
+            this.GetLipData(src, new OVRLipSync.Frame());
             if (src == null) return 0;
             return this.GetAudioWaveValue(src, correct);
         }
