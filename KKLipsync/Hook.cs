@@ -65,7 +65,11 @@ namespace KKLipsync
                 AudioSource asVoice = __instance.asVoice;
                 if (asVoice != null && asVoice.isPlaying && asVoice.time <= asVoice.clip.length && voice != null)
                 {
-                    var frame = voice.GetLipData(asVoice);
+                    if (!LipsyncConfig.Instance.frameStore.TryGetValue(__instance.fbsCtrl.MouthCtrl.GetHashCode(), out var frame))
+                    {
+                        frame = new OVRLipSync.Frame();
+                    }
+                    frame = voice.GetLipData(asVoice, frame);
                     //! This method relies on the fact that GetHashCode() is _not_ overridden.
                     // Thus it returns the same value for every run, and we can safely use this value 
                     // to separate between different objects

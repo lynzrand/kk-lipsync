@@ -37,18 +37,16 @@ namespace KKLipsync
 
         public bool isPlaying = false;
 
-        public OVRLipSync.Frame GetLipData(AudioSource src)
+        public OVRLipSync.Frame GetLipData(AudioSource src, OVRLipSync.Frame frame)
         {
             if (src == null) return new OVRLipSync.Frame();
             src.GetOutputData(audioBuffer, 0);
             isPlaying = true;
             //doubleBuffer = Array.ConvertAll(spectrumBuffer, x => (double)x);
 
-            var framedata = new OVRLipSync.Frame();
+            OVRLipSync.ProcessFrame(contextId, audioBuffer, frame, false);
 
-            OVRLipSync.ProcessFrame(contextId, audioBuffer, framedata, false);
-
-            return framedata;
+            return frame;
         }
 
 
