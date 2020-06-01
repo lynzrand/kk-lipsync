@@ -18,7 +18,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Optimize>true</Optimize>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\ref\ai-shoujou\Assembly-CSharp.dll</HintPath>
@@ -55,6 +55,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LipsyncCore\LipsyncCore.csproj" />
     <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj">
       <Name>OVRLipsyncRef</Name>
     </ProjectReference>
@@ -63,6 +64,7 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="cp ./$(OutDir)AILipsync.dll ./$(OutDir)OVRLipSyncRef.dll ../Release/AILipsync/BepInEx/plugins/" />
+    <Exec Command="if not exist &quot;../Release/AILipsync/BepInEx/plugins/&quot; mkdir &quot;../Release/HS2Lipsync/BepInEx/plugins/&quot;&#xD;&#xA;&#xD;&#xA;cp $(OutDir)AILipsync.dll $(OutDir)OVRLipSyncRef.dll $(OutDir)LipsyncCore.dll ../Release/AILipsync/BepInEx/plugins/&#xD;&#xA;&#xD;&#xA;cp ../OVRLipSync/OVRLipSync.dll ../Release/AILipsync/" />
   </Target>
+
 </Project>

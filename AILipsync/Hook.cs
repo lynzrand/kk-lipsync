@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine;
 
 
-namespace AILipsync
+namespace AiLipsync
 {
     [BepInPlugin(Guid, PluginName, PluginVersion)]
     public class LipsyncPlugin : BaseUnityPlugin

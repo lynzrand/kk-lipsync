@@ -4,7 +4,7 @@ using BepInEx.Logging;
 using BepInEx.Configuration;
 using System.Collections.Generic;
 
-namespace AILipsync
+namespace AiLipsync
 {
     public class LipsyncConfig
     {

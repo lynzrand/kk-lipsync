@@ -5,7 +5,7 @@ using UnityEngine;
 using HarmonyLib;
 using System.Linq;
 
-namespace AILipsync
+namespace AiLipsync
 {
     /// <summary>
     /// This class replaces <c>ChaControl.fbsaaVoice</c>.

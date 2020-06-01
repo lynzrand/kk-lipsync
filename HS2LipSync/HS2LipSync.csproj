@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net40</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LipsyncCore\LipsyncCore.csproj" />
+    <ProjectReference Include="..\OVRLipsync\OVRLipsyncRef.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>ref\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>ref\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>ref\BepInEx.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx.Harmony">
+      <HintPath>ref\BepInEx.Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="BepInEx.Preloader">
+      <HintPath>ref\BepInEx.Preloader.dll</HintPath>
+    </Reference>
+    <Reference Include="IL">
+      <HintPath>ref\IL.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>ref\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>ref\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\ref\ai-shoujou\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exist &quot;../Release/HS2Lipsync/BepInEx/plugins/HS2Lipsync/&quot; mkdir &quot;../Release/HS2Lipsync/BepInEx/plugins/HS2Lipsync&quot;&#xD;&#xA;&#xD;&#xA;cp $(OutDir)HS2Lipsync.dll $(OutDir)OVRLipSyncRef.dll $(OutDir)LipsyncCore.dll ../Release/HS2Lipsync/BepInEx/plugins/HS2Lipsync/&#xD;&#xA;&#xD;&#xA;cp ../OVRLipSync/OVRLipSync.dll ../Release/HS2Lipsync/" />
+  </Target>
+</Project>
