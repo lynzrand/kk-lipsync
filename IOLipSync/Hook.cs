@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -46,30 +47,115 @@ namespace Karenia.IoLipsync
             return false;
         }
 
-        [HarmonyPatch(typeof(KutiPaku), "OnGUI")]
-        [HarmonyAfter]
-        public static void IoDebugGui(KutiPaku __instance, ref Animator ___animator)
+        private struct EnabledToggleKey : IEquatable<EnabledToggleKey>
         {
-            if (!Hook.config.DebugMenu.Value) return;
+            public int id;
+            public int layer;
 
-            var animator = ___animator;
-            var window = GUILayout.Window(0x21840123, Rect.zero, (id) =>
+            #region toggle
+
+            public override bool Equals(object obj)
             {
-                GUILayout.BeginVertical();
-                var cnt = animator.layerCount;
-                for (var i = 0; i < cnt; i++)
-                {
-                    GUILayout.BeginHorizontal();
-                    float layerWeight = animator.GetLayerWeight(i);
-                    GUILayout.Label(string.Format("{0}:{1:0.3}", animator.GetLayerName(i), layerWeight), GUILayout.Width(60));
-                    var newLayerWeight = GUILayout.HorizontalSlider(layerWeight, 0, 1);
-                    GUILayout.EndHorizontal();
+                return obj is EnabledToggleKey key && Equals(key);
+            }
 
-                    if (newLayerWeight != layerWeight) animator.SetLayerWeight(i, layerWeight);
+            public bool Equals(EnabledToggleKey other)
+            {
+                return id == other.id &&
+                       layer == other.layer;
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = 2005647062;
+                hashCode = hashCode * -1521134295 + id.GetHashCode();
+                hashCode = hashCode * -1521134295 + layer.GetHashCode();
+                return hashCode;
+            }
+
+            public static bool operator ==(EnabledToggleKey left, EnabledToggleKey right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(EnabledToggleKey left, EnabledToggleKey right)
+            {
+                return !(left == right);
+            }
+
+            #endregion toggle
+        }
+
+        private struct EnabledToggleValue
+        {
+            public bool enabled;
+            public float value;
+        }
+
+        private static readonly Dictionary<int, Rect> windows = new Dictionary<int, Rect>();
+        private static readonly Dictionary<EnabledToggleKey, EnabledToggleValue> enabledKeys = new Dictionary<EnabledToggleKey, EnabledToggleValue>();
+
+        [HarmonyPatch(typeof(FaceMotion), "Awake")]
+        [HarmonyPostfix]
+        public static void AddDebugGui(FaceMotion __instance, Animator ___animator)
+        {
+            var guiComponent = __instance.gameObject.AddComponent<KutiPakuDebugGui>();
+            guiComponent.target = ___animator;
+        }
+
+        private class KutiPakuDebugGui : MonoBehaviour
+        {
+            public Animator target;
+
+            public void OnGUI()
+            {
+                if (!Hook.config.DebugMenu.Value) return;
+                var id = target.GetHashCode() + 0x14243;
+
+                var animator = target;
+                string title = string.Format("DEBUG/IOLipsync/{0}", target.gameObject.name);
+
+                if (!windows.TryGetValue(id, out var lastWindow))
+                {
+                    lastWindow = new Rect(20, 20, 480, 480);
                 }
 
-                GUILayout.EndVertical();
-            }, string.Format("DEBUG/IOLipsync/{0}", __instance.name));
+                var window = GUILayout.Window(
+                    id, lastWindow,
+                (id1) =>
+                {
+                    GUI.DragWindow();
+                    //GUILayout.BeginArea(new Rect(0, 0, 240, 480));
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(title);
+                    var cnt = animator.layerCount;
+                    for (var i = 0; i < cnt; i++)
+                    {
+                        var toggle = new EnabledToggleKey { id = id, layer = i };
+                        if (!enabledKeys.TryGetValue(toggle, out var value))
+                        {
+                            value = new EnabledToggleValue { enabled = false, value = 0 };
+                        }
+
+                        GUILayout.BeginHorizontal();
+                        float layerWeight = animator.GetLayerWeight(i);
+                        value.enabled = GUILayout.Toggle(value.enabled, string.Format("{0}", animator.GetLayerName(i), layerWeight), GUILayout.Width(90));
+                        GUILayout.Label(string.Format("{0}", layerWeight), GUILayout.Width(90));
+                        value.value = GUILayout.HorizontalSlider(value.value, 0, 1);
+                        GUILayout.EndHorizontal();
+
+                        if (value.enabled) animator.SetLayerWeight(i, value.value);
+
+                        enabledKeys[toggle] = value;
+                    }
+
+                    GUILayout.EndVertical();
+                    //GUILayout.EndArea();
+                },
+                title);
+
+                windows[id] = window;
+            }
         }
     }
 }

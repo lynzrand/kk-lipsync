@@ -9,9 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AILipsync", "AILipsync\AILi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OVRLipsyncRef", "OVRLipsync\OVRLipsyncRef.csproj", "{0A1B9CA8-827C-4E6F-8806-8825A429B2B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HS2LipSync", "HS2LipSYnc\HS2LipSync.csproj", "{2AD09B71-2DB6-4776-B203-0C1D1D34E711}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HS2LipSync", "HS2LipSYnc\HS2LipSync.csproj", "{2AD09B71-2DB6-4776-B203-0C1D1D34E711}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LipsyncCore", "LipsyncCore\LipsyncCore.csproj", "{3085D5B3-6B30-446E-803F-4EF356EA3D7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LipsyncCore", "LipsyncCore\LipsyncCore.csproj", "{3085D5B3-6B30-446E-803F-4EF356EA3D7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IOLipSync", "IOLipSync\IOLipSync.csproj", "{8D796A02-43C7-4E68-9E40-B78E57668234}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{3085D5B3-6B30-446E-803F-4EF356EA3D7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3085D5B3-6B30-446E-803F-4EF356EA3D7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3085D5B3-6B30-446E-803F-4EF356EA3D7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D796A02-43C7-4E68-9E40-B78E57668234}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D796A02-43C7-4E68-9E40-B78E57668234}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D796A02-43C7-4E68-9E40-B78E57668234}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D796A02-43C7-4E68-9E40-B78E57668234}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

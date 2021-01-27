@@ -7,7 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-
+using Newtonsoft.Json;
+using System.IO;
 
 namespace KKLipsync
 {
@@ -29,6 +30,7 @@ namespace KKLipsync
             harmony.PatchAll(typeof(Hooks.UpdateBlendShapeHook));
             harmony.PatchAll(typeof(Hooks.AssistHook));
             harmony.PatchAll(typeof(Hooks.BlendShapeHook));
+            harmony.PatchAll(typeof(Hooks.TestHook));
 
             AddConfigs();
         }
@@ -51,6 +53,19 @@ namespace KKLipsync
 
     namespace Hooks
     {
+
+        public static class TestHook
+        {
+            [HarmonyPatch(typeof(SaveData), "Save")]
+            [HarmonyBefore]
+            public static bool Save(SaveData __instance, ref string path, ref string fileName)
+            {
+                var file = path + fileName + ".other";
+                var res = JsonConvert.SerializeObject(__instance);
+                File.WriteAllText(file, res);
+                return true;
+            }
+        }
         public static class UpdateBlendShapeHook
         {
             [HarmonyPatch(typeof(ChaControl), "UpdateBlendShapeVoice")]

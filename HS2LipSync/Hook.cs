@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using UnityEngine;
 
 
+
 namespace Karenia.Hs2Lipsync
 {
     [BepInPlugin(Guid, PluginName, PluginVersion)]
@@ -43,6 +44,18 @@ namespace Karenia.Hs2Lipsync
 
     namespace Hooks
     {
+        public static class TestHook
+        {
+            [HarmonyPatch(typeof(SaveData), "Save")]
+            [HarmonyBefore]
+            public static bool Save(SaveData __instance, ref string path, ref string fileName)
+            {
+                var file = path + fileName + ".other";
+
+                return true;
+            }
+        }
+
         public static class UpdateBlendShapeHook
         {
             [HarmonyPatch(typeof(ChaControl), "UpdateForce")]
@@ -165,7 +178,7 @@ namespace Karenia.Hs2Lipsync
                 [(int)OVRLipSync.Viseme.CH] = (int)LipTypes.I,
                 [(int)OVRLipSync.Viseme.DD] = (int)LipTypes.I,
                 [(int)OVRLipSync.Viseme.E] = (int)LipTypes.E,
-                [(int)OVRLipSync.Viseme.FF] = (int)LipTypes.Kiss,
+                [(int)OVRLipSync.Viseme.FF] = (int)LipTypes.Unhappy,
                 [(int)OVRLipSync.Viseme.ih] = (int)LipTypes.I,
                 [(int)OVRLipSync.Viseme.kk] = (int)LipTypes.Hate,
                 [(int)OVRLipSync.Viseme.nn] = (int)LipTypes.N,
